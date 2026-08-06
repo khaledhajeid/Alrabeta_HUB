@@ -1,0 +1,65 @@
+name: alrabeta-hub-local
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alrabeta
+      POSTGRES_PASSWORD: localdev
+      POSTGRES_DB: alrabeta
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init-forgejo-db.sh:/docker-entrypoint-initdb.d/init-forgejo-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alrabeta"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:16
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      USER_UID: 1000
+      USER_GID: 1000
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: postgres:5432
+      FORGEJO__database__NAME: forgejo
+      FORGEJO__database__USER: alrabeta
+      FORGEJO__database__PASSWD: localdev
+      FORGEJO__server__DOMAIN: localhost
+      FORGEJO__server__ROOT_URL: http://localhost:3300/
+      FORGEJO__server__HTTP_PORT: 3000
+      FORGEJO__server__SSH_DOMAIN: localhost
+      FORGEJO__server__SSH_PORT: 2222
+      FORGEJO__server__START_SSH_SERVER: "true"
+      FORGEJO__webhook__ALLOWED_HOST_LIST: "*"
+    ports:
+      - "3300:3000"
+      - "2222:22"
+    volumes:
+      - forgejo_data:/data
+
+volumes:
+  pgdata:
+  redisdata:
+  forgejo_data:

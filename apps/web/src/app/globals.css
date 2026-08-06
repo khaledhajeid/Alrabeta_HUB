@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #edf1ef;
+  --surface: #ffffff;
+  --surface-2: #f5f8f6;
+  --line: #d7deda;
+  --text: #101513;
+  --text-muted: #566159;
+  --signal: #0e9d5a;
+  --signal-ink: #ffffff;
+  --ember: #c9611a;
+  --rare: #7c4fe0;
+  --danger: #c23b3b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #0a0d10;
+    --surface: #12171b;
+    --surface-2: #161c21;
+    --line: #232b31;
+    --text: #e9eeec;
+    --text-muted: #8b9a94;
+    --signal: #3fffa0;
+    --signal-ink: #06110b;
+    --ember: #ff8a3d;
+    --rare: #b98cff;
+    --danger: #ff5c5c;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ink: #0a0d10;
+  --surface: #12171b;
+  --surface-2: #161c21;
+  --line: #232b31;
+  --text: #e9eeec;
+  --text-muted: #8b9a94;
+  --signal: #3fffa0;
+  --signal-ink: #06110b;
+  --ember: #ff8a3d;
+  --rare: #b98cff;
+  --danger: #ff5c5c;
+}
+
+:root[data-theme="light"] {
+  --ink: #edf1ef;
+  --surface: #ffffff;
+  --surface-2: #f5f8f6;
+  --line: #d7deda;
+  --text: #101513;
+  --text-muted: #566159;
+  --signal: #0e9d5a;
+  --signal-ink: #ffffff;
+  --ember: #c9611a;
+  --rare: #7c4fe0;
+  --danger: #c23b3b;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-signal: var(--signal);
+  --color-signal-ink: var(--signal-ink);
+  --color-ember: var(--ember);
+  --color-rare: var(--rare);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  color-scheme: light dark;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--signal);
+  color: var(--signal-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}

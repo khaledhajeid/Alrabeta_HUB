@@ -1,0 +1,64 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+
+type Theme = "light" | "dark";
+
+let listeners: Array<() => void> = [];
+
+function getSnapshot(): Theme {
+  const stored = document.documentElement.dataset.theme as Theme | undefined;
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+// Matches this app's dark-first design; corrected to the real value the
+// instant useSyncExternalStore reconciles after hydration.
+function getServerSnapshot(): Theme {
+  return "dark";
+}
+
+function subscribe(callback: () => void) {
+  listeners.push(callback);
+  return () => {
+    listeners = listeners.filter((l) => l !== callback);
+  };
+}
+
+function setTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem("alrabeta-theme", theme);
+  for (const listener of listeners) listener();
+}
+
+export function ThemeToggle() {
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+      className="flex h-8 w-8 items-center justify-center rounded-md border border-line text-text-muted transition-colors hover:text-text hover:bg-surface-2"
+    >
+      {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+    </button>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.5A8.5 8.5 0 1 1 11.5 3a7 7 0 0 0 9.5 9.5z" />
+    </svg>
+  );
+}

@@ -1,0 +1,25 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# env
+.env
+.env.local
+.env.*.local
+
+# local data volumes (docker-compose bind mounts, if any)
+infra/data/
+
+# misc
+.DS_Store
+*.log
+dist/
+build/
+
+# local tool state
+.impeccable/
