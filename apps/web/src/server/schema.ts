@@ -1,13 +1,7 @@
 import { pgTable, text, timestamp, uuid, jsonb, boolean } from "drizzle-orm/pg-core";
 
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  forgejoId: text("forgejo_id").notNull().unique(),
-  username: text("username").notNull().unique(),
-  displayName: text("display_name").notNull(),
-  avatarUrl: text("avatar_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+// User identity (user/session/account/verification) lives in ./auth-schema.ts,
+// owned by Better Auth — regenerate it with `npx auth generate`, don't hand-edit.
 
 // Raw log of every Forgejo webhook delivery. The worker consumes these;
 // keeping the untouched payload lets us replay a delivery if a later
