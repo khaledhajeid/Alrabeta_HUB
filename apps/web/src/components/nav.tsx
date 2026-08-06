@@ -1,7 +1,12 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { auth } from "@/server/auth";
 import { ThemeToggle } from "./theme-toggle";
+import { AuthButton } from "./auth-button";
 
-export function Nav() {
+export async function Nav() {
+  const session = await auth.api.getSession({ headers: await headers() });
+
   return (
     <header className="border-b border-line bg-surface">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
@@ -15,6 +20,7 @@ export function Nav() {
           >
             Profile
           </Link>
+          <AuthButton user={session?.user ?? null} />
           <ThemeToggle />
         </nav>
       </div>

@@ -50,9 +50,20 @@ services:
       FORGEJO__server__ROOT_URL: http://localhost:3300/
       FORGEJO__server__HTTP_PORT: 3000
       FORGEJO__server__SSH_DOMAIN: localhost
+      # This image runs a full system OpenSSH daemon in parallel (s6 "openssh"
+      # service, always on, unconditional) — Forgejo's own built-in Go SSH
+      # server must stay off or both fight over the container's :22.
       FORGEJO__server__SSH_PORT: 2222
-      FORGEJO__server__START_SSH_SERVER: "true"
+      FORGEJO__server__START_SSH_SERVER: "false"
       FORGEJO__webhook__ALLOWED_HOST_LIST: "*"
+      # Skip the interactive install wizard — the instance boots pre-configured.
+      FORGEJO__security__INSTALL_LOCK: "true"
+      FORGEJO__security__SECRET_KEY: ${FORGEJO_SECRET_KEY:?set in infra/.env, see .env.example}
+      FORGEJO__security__INTERNAL_TOKEN: ${FORGEJO_INTERNAL_TOKEN:?set in infra/.env, see .env.example}
+      FORGEJO__oauth2__JWT_SECRET: ${FORGEJO_JWT_SECRET:?set in infra/.env, see .env.example}
+      # Private club, not a public forge — no self-serve signup, no browsing without an account.
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: "true"
     ports:
       - "3300:3000"
       - "2222:22"
