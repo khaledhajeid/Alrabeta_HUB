@@ -23,7 +23,7 @@ export type ActivityEvent = {
 // Writes the durable record first, then fans it out live — commitCount here
 // is whatever ingestPush actually did (including a resync's backfilled
 // count), not just what the triggering webhook payload happened to report.
-export async function publishActivity(event: Omit<ActivityEvent, "at">) {
+export async function publishActivity(event: Omit<ActivityEvent, "at">): Promise<ActivityEvent> {
   const [row] = await db
     .insert(activityEvents)
     .values({
@@ -35,10 +35,9 @@ export async function publishActivity(event: Omit<ActivityEvent, "at">) {
     })
     .returning();
 
-  await publisher.publish(
-    ACTIVITY_CHANNEL,
-    JSON.stringify({ ...event, at: row.createdAt.toISOString() }),
-  );
+  const full: ActivityEvent = { ...event, at: row.createdAt.toISOString() };
+  await publisher.publish(ACTIVITY_CHANNEL, JSON.stringify(full));
+  return full;
 }
 
 // Seeds the feed with history on first load, before any live SSE event has
