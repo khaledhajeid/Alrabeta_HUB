@@ -1,9 +1,9 @@
 # Alrabeta Hub
 
 The Circle's private git-native headquarters. Architecture and visual identity
-are locked; Phases 0 and 1 (infra + identity) are done, running **strictly
-local**, no VPS. Phase 2 (repos & commits) is next on the way to the MVP
-(push → Hub → Discord).
+are locked; Phases 0–2 (infra, identity, repo/commit ingestion) are done,
+running **strictly local**, no VPS. Discord notifications are next on the
+way to the MVP (push → Hub → Discord).
 
 ## What's here
 
@@ -108,7 +108,7 @@ Redis on the standard 5432/6379).
 |---|---|---|
 | Hub (Next.js) | 3000 | |
 | Forgejo web | 3300 | maps to the container's :3000 |
-| Forgejo SSH | 2222 | for `git push` once repos exist (Phase 2) |
+| Forgejo SSH | 2222 | `git push` — see `khaled/welcome` for a working example |
 | Postgres | 5433 | maps to the container's :5432 |
 | Redis | 6380 | maps to the container's :6379 |
 
@@ -117,12 +117,14 @@ Redis on the standard 5432/6379).
 - **Forgejo webhook intake**: `POST /api/webhooks/forgejo` — verifies the
   HMAC-SHA256 signature (`X-Forgejo-Signature`/`X-Gitea-Signature`) over the
   raw body, logs the delivery to `webhook_events`, enqueues a `push-events`
-  BullMQ job. Not yet wired to an actual Forgejo webhook (that's Phase 2,
-  once there's a repo to push to) — but the endpoint, signing, and queue
-  pipeline are real and tested end-to-end (see below).
-- **Worker**: `src/worker.ts`, run via `npm run worker`. Consumes
-  `push-events`, marks the delivery processed. Phase 2 turns this into real
-  commit ingestion.
+  BullMQ job.
+- **Repo/commit ingestion**: `src/server/ingest.ts`, run by the worker on
+  every push. Real repos and commits, not a stub — see "Repos, commits, and
+  reconciliation" below for the design.
+- **Live activity feed**: the home page shows recent pushes and updates
+  without a refresh (Server-Sent Events over a Redis pub/sub channel).
+- **Repo browsing**: `/repos` and `/repos/[owner]/[name]` — list and commit
+  timeline, pulled from the ingested data.
 - **Auth**: Better Auth's generic OAuth plugin against Forgejo as the
   provider (`src/server/auth.ts`). One identity for git and the Hub — no
   separate password. Session lives in Postgres (`user`/`session`/`account`/
@@ -131,6 +133,100 @@ Redis on the standard 5432/6379).
   Sign-in/out is wired into the nav (`src/components/auth-button.tsx`);
   `/profile` shows real session data once signed in.
 - **App shell**: nav, light/dark theme (persisted, no flash).
+
+## Repos, commits, and reconciliation
+
+`khaled/welcome` is a real repo with a real webhook — set up with:
+
+```bash
+# a service token, not a personal one — see below
+docker exec -u git alrabeta-hub-local-forgejo-1 forgejo admin user create \
+  --admin --username alrabeta-bot --email alrabeta-bot@localhost --random-password
+docker exec -u git alrabeta-hub-local-forgejo-1 forgejo admin user generate-access-token \
+  --username alrabeta-bot --token-name worker-service --scopes "read:repository,read:user" --raw
+# → FORGEJO_API_TOKEN in .env.local
+
+curl -X POST http://localhost:3300/api/v1/user/repos -H "Authorization: token <admin token>" \
+  -d '{"name":"welcome","private":true,"auto_init":false,"default_branch":"main"}'
+curl -X POST http://localhost:3300/api/v1/repos/<owner>/<repo>/hooks -H "Authorization: token <admin token>" \
+  -d '{"type":"forgejo","config":{"url":"http://host.docker.internal:3000/api/webhooks/forgejo","content_type":"json","secret":"<FORGEJO_WEBHOOK_SECRET>"},"events":["push"],"active":true}'
+```
+
+`host.docker.internal`, not `localhost`, in the webhook URL — Forgejo runs
+in the container, the Hub runs on the host, and `localhost` from inside the
+container means the container itself.
+
+**Why a bot account instead of a personal token**: the worker isn't acting
+*as* whoever pushed — it's a backend service reading repo data to index it.
+`alrabeta-bot` is a separate Forgejo account (currently instance-admin, so
+it can read across every member's repos, private ones included) with a
+token scoped down to `read:repository,read:user`. This is a placeholder for
+a real permissions model — once there's a proper `alrabeta` Forgejo
+organization with repos living under it, the bot should be an org member
+with read access, not instance-admin. Worth revisiting before this goes
+past a single-person testbed.
+
+### The integrity model
+
+Two schema tables carry this: `repos`/`commits` (what happened) and
+`repo_refs` (a `headSha` cursor per branch — what we last knew each branch
+pointed at). Commits are append-only and idempotent: unique on
+`(repoId, sha)`, `ON CONFLICT DO NOTHING`, because a commit's sha is a hash
+of its content — nothing about an already-seen commit ever needs updating.
+
+Every push webhook carries a `before` SHA — what the branch pointed at
+immediately prior to this push, per Forgejo. Compare that to our stored
+`headSha`:
+
+- **Matches** → clean, trust the webhook's own commit list (cheap, no
+  extra API call).
+- **Doesn't match** (or the branch has history we've never seen) → we can't
+  trust our local view, so fall back to asking the Forgejo API directly
+  what the branch actually contains and reconcile from that.
+
+A dropped webhook (we missed a prior push) and a force push that rewrites
+back past what we knew both surface as exactly this same signal — one
+mechanism handles both. Superseded commits are never deleted; `commits` is
+"everything ever pushed to this repo," not "the current state of the
+branch," so a force-pushed-away commit just stays as history.
+
+One more check earns its keep here, found by actually testing a force push
+rather than assuming: a matching `before` only proves we didn't miss a
+*prior* push — it says nothing about whether Forgejo correctly computed the
+commit list for *this* one. Verified empirically that a simple
+amend-and-force-push reports an accurate `commits[]`, but there's no
+guarantee that holds for a more complex rewrite (this is a known rough edge
+in Gitea/Forgejo-style push hooks). So there's a second, cheap check: if
+the payload doesn't even contain the commit it claims is now the tip,
+that's untrustworthy too — resync instead of inserting a partial picture.
+
+**Manual recovery**: `POST /api/repos/[owner]/[name]/resync` (signed-in
+users only; also a button on the repo page) re-fetches a repo's tracked
+branches straight from the Forgejo API — the exact same function the
+automatic reconciliation falls back to. For a repo that never got webhook
+coverage at all (created before the webhook existed, or the Hub was down
+through Forgejo's entire retry window), this is the way back to a correct
+state.
+
+### Why Server-Sent Events, not WebSockets
+
+The original architecture pitch called for a WebSocket layer; this uses
+SSE instead, deliberately. The activity feed is server → client only —
+nothing the browser needs to send back — and SSE gets that for free from a
+plain Next.js Route Handler streaming a `Response`, no new dependency, no
+separate ws server process. Worker and web are different processes, so the
+bridge between "worker ingested a push" and "browser tab gets notified" is
+Redis pub/sub (`src/server/activity.ts`), which was already in the stack
+for BullMQ. If something genuinely bidirectional shows up later — live
+cursors, chat — that's the moment to reach for real WebSockets.
+
+Activity events are also persisted (`activity_events` table), not just
+published — the initial page load and anything that streams in afterward
+read from the same source, so they never disagree. That table is the fix
+for a real bug caught while testing: reconstructing the initial feed from
+`webhook_events`' raw payload undercounted a resynced push (the payload
+only lists what Forgejo itself reported, not what our backfill actually
+inserted).
 
 ### Bugs worth knowing about
 
@@ -168,5 +264,5 @@ the real judge worker.
 
 ## Not done yet (by design)
 
-No real repo/commit ingestion, no quests, no AI review, no gamification, no
-VPS/TLS/domain. Those are Phases 2–8 — see the roadmap.
+No Discord notifications, no quests, no AI review, no gamification, no
+VPS/TLS/domain. Those are Phases 3–8 — see the roadmap.

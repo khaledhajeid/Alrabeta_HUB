@@ -10,19 +10,30 @@ import { eq } from "drizzle-orm";
 import { db } from "@/server/db";
 import { webhookEvents } from "@/server/schema";
 import { connection, type PushJobData } from "@/server/queue";
+import { ingestPush } from "@/server/ingest";
 
 const worker = new Worker<PushJobData>(
   "push-events",
   async (job) => {
-    // Phase 2 will turn this into: fetch the commit range from Forgejo,
-    // upsert repo/commit rows, push an activity-feed event over the
-    // WebSocket layer. For now, prove the pipeline end-to-end.
-    console.log(`[worker] processing ${job.name} delivery=${job.data.deliveryId}`);
+    const row = await db.query.webhookEvents.findFirst({
+      where: eq(webhookEvents.id, job.data.webhookEventId),
+    });
+    if (!row) {
+      console.warn(`[worker] no webhook_events row for ${job.data.webhookEventId}, skipping`);
+      return;
+    }
 
-    await db
-      .update(webhookEvents)
-      .set({ processed: true })
-      .where(eq(webhookEvents.id, job.data.webhookEventId));
+    if (job.name === "push") {
+      const result = await ingestPush(row.payload as Parameters<typeof ingestPush>[0]);
+      console.log(
+        `[worker] ${job.name} delivery=${job.data.deliveryId}`,
+        "resynced" in result
+          ? `commits=${result.commitCount} resynced=${result.resynced}`
+          : result.skipped,
+      );
+    }
+
+    await db.update(webhookEvents).set({ processed: true }).where(eq(webhookEvents.id, row.id));
   },
   { connection, concurrency: 4 },
 );

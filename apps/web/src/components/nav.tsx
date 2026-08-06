@@ -15,6 +15,12 @@ export async function Nav() {
         </Link>
         <nav className="flex items-center gap-4">
           <Link
+            href="/repos"
+            className="text-sm text-text-muted transition-colors hover:text-text"
+          >
+            Repos
+          </Link>
+          <Link
             href="/profile"
             className="text-sm text-text-muted transition-colors hover:text-text"
           >
