@@ -51,6 +51,13 @@ async function upsertRepo(payload: PushPayload["repository"]): Promise<RepoRow> 
     .onConflictDoUpdate({
       target: repos.forgejoId,
       set: {
+        // Every field the payload carries, including ownerLogin — a repo
+        // transferred to an org (like this one, just now) keeps the same
+        // forgejoId but changes owner, and resyncRef builds its Forgejo API
+        // path straight from ownerLogin + name. Missing it here silently
+        // breaks resync for any repo that's ever been transferred, and
+        // this exact bug produced exactly that stale state on first try.
+        ownerLogin: payload.owner.login,
         name: payload.name,
         fullName: payload.full_name,
         description: payload.description,

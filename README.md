@@ -109,7 +109,7 @@ Redis on the standard 5432/6379).
 |---|---|---|
 | Hub (Next.js) | 3000 | |
 | Forgejo web | 3300 | maps to the container's :3000 |
-| Forgejo SSH | 2222 | `git push` — see `khaled/welcome` for a working example |
+| Forgejo SSH | 2222 | `git push` — see `alrabeta/welcome` for a working example |
 | Postgres | 5433 | maps to the container's :5432 |
 | Redis | 6380 | maps to the container's :6379 |
 
@@ -137,19 +137,30 @@ Redis on the standard 5432/6379).
 
 ## Repos, commits, and reconciliation
 
-`khaled/welcome` is a real repo with a real webhook — set up with:
+Every repo the Circle uses lives under the `alrabeta` Forgejo org, not
+individual namespaces — set up with:
 
 ```bash
-# a service token, not a personal one — see below
+# 1. The org, and a read-only team covering every current and future repo
+# under it in one shot (includes_all_repositories: true) — new repos need
+# zero manual webhook/permission setup from here on.
+curl -X POST http://localhost:3300/api/v1/orgs -H "Authorization: token <admin token>" \
+  -d '{"username":"alrabeta","full_name":"Alrabeta Hub","visibility":"private"}'
+curl -X POST http://localhost:3300/api/v1/orgs/alrabeta/teams -H "Authorization: token <admin token>" \
+  -d '{"name":"bot-readers","permission":"read","units":["repo.code"],"includes_all_repositories":true}'
+
+# 2. The service account — a real org member via that team, not instance-admin
 docker exec -u git alrabeta-hub-local-forgejo-1 forgejo admin user create \
   --admin --username alrabeta-bot --email alrabeta-bot@localhost --random-password
 docker exec -u git alrabeta-hub-local-forgejo-1 forgejo admin user generate-access-token \
   --username alrabeta-bot --token-name worker-service --scopes "read:repository,read:user" --raw
 # → FORGEJO_API_TOKEN in .env.local
+curl -X PUT http://localhost:3300/api/v1/teams/<team-id>/members/alrabeta-bot -H "Authorization: token <admin token>"
+curl -X PATCH http://localhost:3300/api/v1/admin/users/alrabeta-bot -H "Authorization: token <admin token>" \
+  -d '{"admin": false}'
 
-curl -X POST http://localhost:3300/api/v1/user/repos -H "Authorization: token <admin token>" \
-  -d '{"name":"welcome","private":true,"auto_init":false,"default_branch":"main"}'
-curl -X POST http://localhost:3300/api/v1/repos/<owner>/<repo>/hooks -H "Authorization: token <admin token>" \
+# 3. One webhook, at the org level — covers every repo under it, no per-repo setup
+curl -X POST http://localhost:3300/api/v1/orgs/alrabeta/hooks -H "Authorization: token <admin token>" \
   -d '{"type":"forgejo","config":{"url":"http://host.docker.internal:3000/api/webhooks/forgejo","content_type":"json","secret":"<FORGEJO_WEBHOOK_SECRET>"},"events":["push"],"active":true}'
 ```
 
@@ -157,15 +168,31 @@ curl -X POST http://localhost:3300/api/v1/repos/<owner>/<repo>/hooks -H "Authori
 in the container, the Hub runs on the host, and `localhost` from inside the
 container means the container itself.
 
+**Why an org instead of personal namespaces**: this started as a single
+per-repo webhook on `khaled/welcome` (Phase 2), which doesn't scale —
+onboarding a second person would mean manually registering a webhook on
+every repo they create, easy to forget and easy to drift. One org-level
+webhook covers all of it automatically, for repos that don't exist yet
+either.
+
 **Why a bot account instead of a personal token**: the worker isn't acting
 *as* whoever pushed — it's a backend service reading repo data to index it.
-`alrabeta-bot` is a separate Forgejo account (currently instance-admin, so
-it can read across every member's repos, private ones included) with a
-token scoped down to `read:repository,read:user`. This is a placeholder for
-a real permissions model — once there's a proper `alrabeta` Forgejo
-organization with repos living under it, the bot should be an org member
-with read access, not instance-admin. Worth revisiting before this goes
-past a single-person testbed.
+`alrabeta-bot` is a separate Forgejo account, a member of the org's
+`bot-readers` team (read access, every repo, via `includes_all_repositories`)
+rather than instance-admin — it was instance-admin initially, which worked
+but over-scoped a service that only ever needs read access to repos under
+this one org. Demoted once the team covered the same ground properly.
+
+Moving `khaled/welcome` into the org (`POST /repos/{owner}/{repo}/transfer`)
+surfaced a real bug worth knowing about: `ingest.ts`'s repo upsert only
+updated `fullName` on conflict, not `ownerLogin` — so after the transfer,
+`repos.full_name` correctly read `alrabeta/welcome` while `repos.owner_login`
+silently kept the pre-transfer value (`khaled`). Nothing crashed, but the
+resync endpoint builds its Forgejo API path from `ownerLogin` + `name`, so
+resync would have silently called the wrong URL for any repo ever
+transferred. Fixed by updating every payload-derived field on conflict, not
+a subset — caught by actually doing the transfer and checking the row
+after, not by inspecting the upsert code and assuming it was fine.
 
 ### The integrity model
 
