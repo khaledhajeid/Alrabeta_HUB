@@ -7,9 +7,9 @@
   --line: #d7deda;
   --text: #101513;
   --text-muted: #566159;
-  --signal: #0e9d5a;
+  --signal: #0a7443;
   --signal-ink: #ffffff;
-  --ember: #c9611a;
+  --ember: #a14e15;
   --rare: #7c4fe0;
   --danger: #c23b3b;
 }
@@ -51,9 +51,9 @@
   --line: #d7deda;
   --text: #101513;
   --text-muted: #566159;
-  --signal: #0e9d5a;
+  --signal: #0a7443;
   --signal-ink: #ffffff;
-  --ember: #c9611a;
+  --ember: #a14e15;
   --rare: #7c4fe0;
   --danger: #c23b3b;
 }
@@ -92,7 +92,7 @@ body {
   background: var(--ink);
   color: var(--text);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }

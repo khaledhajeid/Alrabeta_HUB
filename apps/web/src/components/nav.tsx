@@ -9,20 +9,23 @@ export async function Nav() {
 
   return (
     <header className="border-b border-line bg-surface">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-        <Link href="/" className="font-mono text-sm font-bold tracking-tight text-text">
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
+        <Link
+          href="/"
+          className="shrink-0 font-mono text-sm font-bold tracking-tight text-text"
+        >
           alrabeta<span className="text-signal">.</span>hub
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-1 sm:gap-4">
           <Link
             href="/repos"
-            className="text-sm text-text-muted transition-colors hover:text-text"
+            className="rounded-md px-2 py-1.5 text-sm text-text-muted transition-colors hover:text-text sm:px-0 sm:py-0"
           >
             Repos
           </Link>
           <Link
             href="/profile"
-            className="text-sm text-text-muted transition-colors hover:text-text"
+            className="rounded-md px-2 py-1.5 text-sm text-text-muted transition-colors hover:text-text sm:px-0 sm:py-0"
           >
             Profile
           </Link>

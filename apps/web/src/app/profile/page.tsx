@@ -38,8 +38,8 @@ export default async function ProfilePage() {
 
       <div className="mt-4 rounded-lg border border-dashed border-line px-5 py-10 text-center">
         <p className="text-sm text-text-muted">
-          Contribution graph, streak, badges, and points fill in from Phase 2
-          onward, once there&rsquo;s real repo and quest activity to show.
+          Contribution graph, streak, badges, and points fill in once quests
+          and gamification land.
         </p>
       </div>
     </div>
