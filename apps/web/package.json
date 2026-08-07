@@ -9,7 +9,8 @@
     "lint": "eslint",
     "worker": "tsx watch --env-file=.env.local src/worker.ts",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:seed-quests": "tsx --env-file=.env.local scripts/seed-quests.ts"
   },
   "dependencies": {
     "better-auth": "^1.6.26",
@@ -19,7 +20,10 @@
     "next": "16.3.0",
     "postgres": "^3.4.9",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
