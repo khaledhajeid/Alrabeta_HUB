@@ -155,7 +155,13 @@ export const questSubmissions = pgTable(
     status: submissionStatus("status").notNull().default("submitted"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("quest_submissions_quest_user_idx").on(table.questId, table.userId)],
+  (table) => [
+    index("quest_submissions_quest_user_idx").on(table.questId, table.userId),
+    // Same commit shouldn't be recorded as a submission twice regardless of
+    // circumstance (webhook retry edge cases, etc.) — same idempotency
+    // discipline as every other table in the ingestion pipeline.
+    unique("quest_submissions_quest_commit_unique").on(table.questId, table.commitSha),
+  ],
 );
 
 export const questsRelations = relations(quests, ({ one }) => ({

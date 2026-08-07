@@ -4,6 +4,7 @@ import { repos, repoRefs, commits } from "./schema";
 import { fetchRecentCommits } from "./forgejo";
 import { publishActivity } from "./activity";
 import { notifyDiscord } from "./discord";
+import { recordQuestSubmissionIfApplicable } from "./quest-submissions";
 
 const ZERO_SHA = "0".repeat(40);
 
@@ -13,7 +14,7 @@ type PushPayload = {
   ref: string;
   before: string;
   after: string;
-  pusher: { login: string };
+  pusher: { login: string; id: number };
   repository: {
     id: number;
     name: string;
@@ -91,11 +92,36 @@ async function insertCommits(
     .onConflictDoNothing();
 }
 
-// Persists + fans out over SSE, then tells Discord — in that order, so a
-// slow or failing Discord call (already non-throwing on its own) can never
-// delay or block the feed actually reflecting the push.
-async function announcePush(event: Parameters<typeof publishActivity>[0]) {
-  const persisted = await publishActivity(event);
+// Shared tail for both ingestion paths (fast path and resync) — quest
+// detection, then persist + fan out over SSE, then tell Discord, in that
+// order, so a slow or failing Discord call (already non-throwing on its
+// own) can never delay or block the feed actually reflecting the push.
+//
+// payload.after is the trustworthy new tip of the branch regardless of
+// which path ran — the resync path exists because the *commit list* was
+// uncertain, not because Forgejo's own report of the ref update was, so
+// it's always correct to use here for "what commit is this submission."
+async function finishPush(
+  repo: RepoRow,
+  branch: string,
+  payload: PushPayload,
+  commitCount: number,
+) {
+  await recordQuestSubmissionIfApplicable({
+    branch,
+    repoId: repo.id,
+    commitSha: payload.after,
+    pusherForgejoId: payload.pusher.id,
+  });
+
+  const persisted = await publishActivity({
+    type: "push",
+    repo: repo.fullName,
+    branch,
+    pusher: payload.pusher.login,
+    commitCount,
+    headMessage: payload.head_commit?.message ?? null,
+  });
   await notifyDiscord(persisted);
 }
 
@@ -160,14 +186,7 @@ export async function ingestPush(payload: PushPayload) {
 
   if (needsResync) {
     const { commitCount } = await resyncRef(repo, payload.ref);
-    await announcePush({
-      type: "push",
-      repo: repo.fullName,
-      branch,
-      pusher: payload.pusher.login,
-      commitCount,
-      headMessage: payload.head_commit?.message ?? null,
-    });
+    await finishPush(repo, branch, payload, commitCount);
     return { repo, resynced: true, commitCount };
   }
 
@@ -183,15 +202,7 @@ export async function ingestPush(payload: PushPayload) {
 
   await insertCommits(repo.id, branch, commitRows);
   await advanceRef(repo.id, payload.ref, payload.after);
-
-  await announcePush({
-    type: "push",
-    repo: repo.fullName,
-    branch,
-    pusher: payload.pusher.login,
-    commitCount: commitRows.length,
-    headMessage: payload.head_commit?.message ?? null,
-  });
+  await finishPush(repo, branch, payload, commitRows.length);
 
   return { repo, resynced: false, commitCount: commitRows.length };
 }
