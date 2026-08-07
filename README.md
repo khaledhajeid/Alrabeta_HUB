@@ -335,5 +335,10 @@ the real judge worker.
 
 ## Not done yet (by design)
 
-No quests, no AI review, no gamification, no VPS/TLS/domain. Those are
-Phases 4–8 — see the roadmap.
+Phases 0–5 (infra, identity, ingestion, Discord, the sandbox grading
+engine) are done. The project is pivoting from a C/C++-only quest checker
+to a broader market-driven developer hub — see
+[`docs/MASTER_PLAN.md`](docs/MASTER_PLAN.md) for the phased plan (Phases
+6–12: DevOps/SDLC hardening, visual identity, the generalized quest runner,
+gamification, admin panel, and a pre-beta hardening pass) before any of
+that ships.
