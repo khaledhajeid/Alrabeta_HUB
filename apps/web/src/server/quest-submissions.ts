@@ -2,6 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { db } from "./db";
 import { quests, questSubmissions } from "./schema";
 import { account } from "./auth-schema";
+import { gradingQueue } from "./grading-queue";
+import { GRADABLE_TAGS } from "./badges";
 
 const QUEST_BRANCH_PREFIX = "quest/";
 
@@ -62,6 +64,11 @@ export async function recordQuestSubmissionIfApplicable(params: {
 
   if (submission) {
     console.log(`[quests] submission recorded: ${quest.slug} by user ${linkedAccount.userId}`);
+
+    if (quest.tags.some((tag) => GRADABLE_TAGS.includes(tag))) {
+      await gradingQueue.add("grade", { submissionId: submission.id });
+      console.log(`[quests] grading job enqueued: submission=${submission.id}`);
+    }
   }
 
   return submission ?? null;

@@ -153,6 +153,12 @@ export const questSubmissions = pgTable(
     branch: text("branch").notNull(),
     commitSha: text("commit_sha").notNull(),
     status: submissionStatus("status").notNull().default("submitted"),
+    // Raw judge.sh verdict for this submission — valgrind/asan_ubsan/tsan
+    // results, verdict, duration. Null until the grading worker picks the
+    // job up; kept as the untouched JSON (mirrors webhookEvents' approach)
+    // so badges.ts and any future UI can read the full detail without a
+    // second schema for it.
+    judgeOutput: jsonb("judge_output"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -162,6 +168,26 @@ export const questSubmissions = pgTable(
     // discipline as every other table in the ingestion pipeline.
     unique("quest_submissions_quest_commit_unique").on(table.questId, table.commitSha),
   ],
+);
+
+// Awarded by the grading worker (Violet-tier: zero-leak, race-free), never
+// by hand. One row per (user, badge) — re-earning the same badge on a later
+// quest doesn't duplicate it, which is also what makes awarding idempotent
+// against a retried grading job.
+export const badges = pgTable(
+  "badges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(), // e.g. "zero-leak", "race-free"
+    questSubmissionId: uuid("quest_submission_id")
+      .notNull()
+      .references(() => questSubmissions.id, { onDelete: "cascade" }),
+    awardedAt: timestamp("awarded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("badges_user_slug_unique").on(table.userId, table.slug)],
 );
 
 export const questsRelations = relations(quests, ({ one }) => ({
