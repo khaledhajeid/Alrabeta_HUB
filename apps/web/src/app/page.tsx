@@ -2,8 +2,12 @@ import { checkHealth } from "@/server/health";
 import { getRecentActivity } from "@/server/activity";
 import { ActivityFeed } from "@/components/activity-feed";
 
+// Health checks hit FORGEJO_URL (internal, reliable); anything a beta user
+// might actually click needs the URL their own browser can reach.
+const FORGEJO_LINK_URL = process.env.FORGEJO_PUBLIC_URL || process.env.FORGEJO_URL;
+
 const SERVICES = [
-  { key: "forgejo", label: "Forgejo", detail: process.env.FORGEJO_URL, href: process.env.FORGEJO_URL },
+  { key: "forgejo", label: "Forgejo", detail: FORGEJO_LINK_URL, href: FORGEJO_LINK_URL },
   { key: "postgres", label: "Postgres", detail: "alrabeta", href: undefined },
   { key: "redis", label: "Redis", detail: "push-events queue", href: undefined },
 ] as const;
@@ -37,7 +41,7 @@ export default async function HomePage() {
         </div>
         {status.forgejo && (
           <a
-            href={process.env.FORGEJO_URL}
+            href={FORGEJO_LINK_URL}
             target="_blank"
             rel="noreferrer"
             className="text-xs text-text-muted underline decoration-line underline-offset-2 hover:text-text"

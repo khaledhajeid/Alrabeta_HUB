@@ -24,7 +24,12 @@ export const auth = betterAuth({
           providerId: "forgejo",
           clientId: process.env.FORGEJO_OAUTH_CLIENT_ID!,
           clientSecret: process.env.FORGEJO_OAUTH_CLIENT_SECRET!,
-          authorizationUrl: `${process.env.FORGEJO_URL}/login/oauth/authorize`,
+          // The browser has to reach this one directly, so it needs whatever
+          // URL is actually public — falls back to FORGEJO_URL for a pure
+          // local setup with no tunnel. Token exchange and userinfo are
+          // server-to-server, from this process to Forgejo, so they stay on
+          // the internal URL rather than round-tripping through the tunnel.
+          authorizationUrl: `${process.env.FORGEJO_PUBLIC_URL || process.env.FORGEJO_URL}/login/oauth/authorize`,
           tokenUrl: `${process.env.FORGEJO_URL}/login/oauth/access_token`,
           userInfoUrl: `${process.env.FORGEJO_URL}/login/oauth/userinfo`,
           scopes: ["openid", "profile", "email"],

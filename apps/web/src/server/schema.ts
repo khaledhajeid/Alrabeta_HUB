@@ -1,4 +1,6 @@
-import { pgTable, text, timestamp, uuid, jsonb, boolean, integer, unique, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, jsonb, boolean, integer, unique, index, pgEnum } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { user } from "./auth-schema";
 
 // User identity (user/session/account/verification) lives in ./auth-schema.ts,
 // owned by Better Auth — regenerate it with `npx auth generate`, don't hand-edit.
@@ -98,3 +100,64 @@ export const activityEvents = pgTable(
   },
   (table) => [index("activity_events_created_idx").on(table.createdAt)],
 );
+
+export const questDifficulty = pgEnum("quest_difficulty", ["easy", "medium", "hard"]);
+export const questStatus = pgEnum("quest_status", ["draft", "published"]);
+
+export const quests = pgTable("quests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  // Plain text, not markdown — the one-line preview on /quests. Keeping it
+  // a distinct field instead of truncating promptMarkdown avoids showing a
+  // half-rendered heading or a code fence cut mid-block in the list view.
+  summary: text("summary").notNull(),
+  promptMarkdown: text("prompt_markdown").notNull(),
+  difficulty: questDifficulty("difficulty").notNull(),
+  tags: text("tags").array().notNull().default([]),
+  points: integer("points").notNull(),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => user.id),
+  status: questStatus("status").notNull().default("draft"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const submissionStatus = pgEnum("submission_status", [
+  "submitted",
+  "passed",
+  "failed",
+  "needs_review",
+]);
+
+// Populated by convention: a push to a branch named quest/<slug> gets
+// auto-detected during ingestion and creates a row here — no separate
+// "submit" form. That detection isn't wired up yet (separate follow-up
+// work); this table exists now so the quest detail page has something
+// real to query against once it is, rather than a UI built against a
+// shape that doesn't exist yet.
+export const questSubmissions = pgTable(
+  "quest_submissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    questId: uuid("quest_id")
+      .notNull()
+      .references(() => quests.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    repoId: uuid("repo_id")
+      .notNull()
+      .references(() => repos.id, { onDelete: "cascade" }),
+    branch: text("branch").notNull(),
+    commitSha: text("commit_sha").notNull(),
+    status: submissionStatus("status").notNull().default("submitted"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("quest_submissions_quest_user_idx").on(table.questId, table.userId)],
+);
+
+export const questsRelations = relations(quests, ({ one }) => ({
+  author: one(user, { fields: [quests.authorId], references: [user.id] }),
+}));
