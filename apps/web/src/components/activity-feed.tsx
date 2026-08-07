@@ -30,7 +30,7 @@ function Row({ event, isLive }: { event: ActivityEvent; isLive?: boolean }) {
           </span>
         </div>
         {event.headMessage && (
-          <div className="mt-0.5 truncate font-mono text-xs text-text-muted">
+          <div className="mt-0.5 truncate font-mono text-sm text-text-muted">
             {event.headMessage.split("\n")[0]}
           </div>
         )}

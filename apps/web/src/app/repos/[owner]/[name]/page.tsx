@@ -28,19 +28,19 @@ export default async function RepoDetailPage({
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-mono text-lg font-semibold text-text">{repo.fullName}</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="break-all font-mono text-lg font-semibold text-text">{repo.fullName}</h1>
             {repo.private && (
-              <span className="rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] text-text-muted">
+              <span className="shrink-0 rounded-full border border-line px-1.5 py-0.5 font-mono text-[10px] text-text-muted">
                 private
               </span>
             )}
           </div>
           {repo.description && <p className="mt-1 text-sm text-text-muted">{repo.description}</p>}
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
           <ResyncButton owner={repo.ownerLogin} name={repo.name} />
           <a
             href={repo.htmlUrl}

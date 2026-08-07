@@ -11,7 +11,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${plexSans.variable} ${jetbrainsMono.variable} h-full`}>
+    <html
+      lang="en"
+      className={`${plexSans.variable} ${jetbrainsMono.variable} h-full`}
+      // ThemeScript sets data-theme on this element before hydration, on
+      // purpose, to avoid a flash of the wrong theme — React has no way to
+      // know that in advance, so it always reads as a mismatch here. This
+      // is the documented fix for exactly that pattern, scoped to this one
+      // element rather than silencing hydration warnings globally.
+      suppressHydrationWarning
+    >
       <head>
         <ThemeScript />
       </head>
