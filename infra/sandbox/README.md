@@ -28,16 +28,50 @@ checks came back clean; `"clean"` if it ran but tripped a sanitizer;
 docker build -t alrabeta-judge .
 
 docker run --rm \
+  --network none \
+  --memory 512m --cpus 1 --pids-limit 128 \
+  --read-only --tmpfs /tmp:rw,exec,size=64m,mode=1777 \
   --cap-add SYS_PTRACE \
   --security-opt seccomp=judge-seccomp.json \
   -v "$(pwd)/fixtures:/fixtures:ro" \
   alrabeta-judge /fixtures/clean.c
 ```
 
-The `--cap-add SYS_PTRACE --security-opt seccomp=judge-seccomp.json` flags
-are **required** — see the gotcha below. They can't be baked into the
-Dockerfile (they're `docker run`-time options), so the Phase 5 worker's job
-runner has to always pass them when it shells out to run a submission.
+None of these flags are optional — every one is load-bearing (see the two
+gotchas below), and `src/server/judge.ts` (Phase 5) has to pass this exact
+set every time it shells out to grade a real submission.
+
+## Phase 5 hardening — and the bug it found
+
+Phase 0 validated *detection correctness* against three fixtures it
+controlled itself. Phase 5 runs this against real submissions from 14
+people, which is a different threat model, so before wiring it up to real
+grading the container got hardened: `--network none` (no exfiltration, no
+using the sandbox as a launchpad), memory/CPU/`--pids-limit` (bounds a
+runaway allocation or fork bomb), `--read-only` root with a `tmpfs` for
+build scratch space, and a non-root user in the image (`USER judge`,
+uid 10001 — the original Dockerfile ran everything as root).
+
+**Re-verifying against the same three fixtures after hardening caught a
+second real fail-open bug**, this one worse than the seccomp one: with
+`--read-only --tmpfs /tmp:rw,size=64m` (no `exec` flag), every fixture came
+back `verdict: "failed"`, `exit_code: 126` — and `racy.c` specifically came
+back `tsan.clean: true, races: 0`. Not "no findings" — the compiled binary
+never executed at all, because **Docker's `--tmpfs` mount defaults to
+`noexec`**, and `judge.sh` compiles into `$TMP` under `/tmp` and then runs
+the result from there. A submission that was never actually checked would
+have silently reported clean — the exact failure mode the seccomp fix in
+Phase 0 was written to prevent, reintroduced by hardening meant to make
+things safer. Fixed by mounting the tmpfs with `exec` explicitly
+(`--tmpfs /tmp:rw,exec,size=64m,mode=1777`), then re-verified all three
+fixtures produce correct verdicts under the *full* hardened flag set
+together, not just the tmpfs fix in isolation.
+
+**Lesson carried forward**: any future change to this container's run
+flags — hardening or otherwise — needs the same re-verification against
+`fixtures/{clean,leaky,racy}.c` before it ships, not just a check that the
+container starts. "It runs" and "it correctly detects the thing it exists
+to detect" are different claims.
 
 ## Validated results (Apple Silicon, Docker Desktop, linux/arm64)
 
