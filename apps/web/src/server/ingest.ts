@@ -3,6 +3,7 @@ import { db } from "./db";
 import { repos, repoRefs, commits } from "./schema";
 import { fetchRecentCommits } from "./forgejo";
 import { publishActivity } from "./activity";
+import { notifyDiscord } from "./discord";
 
 const ZERO_SHA = "0".repeat(40);
 
@@ -83,6 +84,14 @@ async function insertCommits(
     .onConflictDoNothing();
 }
 
+// Persists + fans out over SSE, then tells Discord — in that order, so a
+// slow or failing Discord call (already non-throwing on its own) can never
+// delay or block the feed actually reflecting the push.
+async function announcePush(event: Parameters<typeof publishActivity>[0]) {
+  const persisted = await publishActivity(event);
+  await notifyDiscord(persisted);
+}
+
 async function advanceRef(repoId: string, ref: string, headSha: string) {
   await db
     .insert(repoRefs)
@@ -144,7 +153,7 @@ export async function ingestPush(payload: PushPayload) {
 
   if (needsResync) {
     const { commitCount } = await resyncRef(repo, payload.ref);
-    await publishActivity({
+    await announcePush({
       type: "push",
       repo: repo.fullName,
       branch,
@@ -168,7 +177,7 @@ export async function ingestPush(payload: PushPayload) {
   await insertCommits(repo.id, branch, commitRows);
   await advanceRef(repo.id, payload.ref, payload.after);
 
-  await publishActivity({
+  await announcePush({
     type: "push",
     repo: repo.fullName,
     branch,
