@@ -1,9 +1,10 @@
 # Alrabeta Hub
 
-The Circle's private git-native headquarters. Architecture and visual identity
-are locked; Phases 0–2 (infra, identity, repo/commit ingestion) are done,
-running **strictly local**, no VPS. Discord notifications are next on the
-way to the MVP (push → Hub → Discord).
+The Circle's private git-native headquarters. Architecture and visual
+identity are locked; Phases 0–3 (infra, identity, repo/commit ingestion,
+Discord notifications) are done, running **strictly local**, no VPS. The
+original MVP — push → Hub → Discord — is live. Quests, the AI reviewer, and
+gamification are next.
 
 ## What's here
 
@@ -264,5 +265,5 @@ the real judge worker.
 
 ## Not done yet (by design)
 
-No Discord notifications, no quests, no AI review, no gamification, no
-VPS/TLS/domain. Those are Phases 3–8 — see the roadmap.
+No quests, no AI review, no gamification, no VPS/TLS/domain. Those are
+Phases 4–8 — see the roadmap.
