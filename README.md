@@ -99,6 +99,49 @@ npm run worker   # consumes push-events off the queue
 services (Forgejo / Postgres / Redis) — that's the fastest way to tell if
 `docker compose` is actually up.
 
+## Going public: the Cloudflare Tunnel
+
+Beta testing runs through a Cloudflare Tunnel — `https://alrabetahub.app`
+(Hub) and `https://git.alrabetahub.app` (Forgejo), both terminating back at
+this same local Docker Compose setup. Nothing in `infra/` changed for
+this — the tunnel just forwards to the ports already published locally.
+
+What *did* need to change, and why, if you're ever redoing this migration
+(new domain, new tunnel, etc.):
+
+- **Forgejo's own `DOMAIN`/`ROOT_URL`/`SSH_DOMAIN`** (`infra/docker-compose.yml`)
+  — Forgejo bakes its own root URL into everything it generates: commit
+  links, repo links, avatar URLs in OAuth userinfo responses. Leave this on
+  `localhost` and every link the Hub shows back to a user is dead on their
+  own machine.
+- **`FORGEJO_PUBLIC_URL`** (`apps/web/.env.local`) — separate from
+  `FORGEJO_URL`. The OAuth *authorization* redirect has to send the user's
+  browser somewhere it can actually reach; token exchange and userinfo are
+  server-to-server calls that stay on the internal URL rather than
+  round-tripping through the tunnel for no reason. See `src/server/auth.ts`.
+- **`BETTER_AUTH_URL`** — the public domain, since that's what Better Auth
+  uses to build the `redirect_uri` it sends to Forgejo. All three redirect
+  URIs (127.0.0.1, localhost, the public domain) stay registered on the
+  Forgejo OAuth2 application so local dev and the public beta both work.
+- **The org webhook URL** — repointed from `host.docker.internal:3000` to
+  the public Hub URL.
+- **`npm run build && npm run start`, not `npm run dev`**, for the process
+  the tunnel actually points at. `next dev` has a dev-only cross-origin
+  protection (`allowedDevOrigins`) that would need the public domain added
+  — the same class of problem as the 127.0.0.1-vs-localhost 403 from Phase
+  1 — plus real users don't need HMR overhead. `npm run worker` is
+  unaffected either way.
+
+**A one-time migration gotcha, not an ongoing one**: anything already
+ingested before the `ROOT_URL` fix has the old `localhost` URL baked in —
+repo/commit `url` fields, and any already-signed-in user's avatar `image`.
+Commits are deliberately immutable on conflict (content is a hash, never
+needs updating), so a resync won't touch already-stored URLs; that
+principle is still correct, it just doesn't cover a derived, config-
+dependent field like a URL. Fixed once via a direct `UPDATE`, not a schema
+change — everything ingested *after* the domain was fixed gets the right
+URL from the start.
+
 ## Local ports
 
 Picked to avoid colliding with anything else that might already be running
