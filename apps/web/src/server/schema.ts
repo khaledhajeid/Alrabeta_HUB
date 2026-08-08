@@ -104,6 +104,17 @@ export const activityEvents = pgTable(
 export const questDifficulty = pgEnum("quest_difficulty", ["easy", "medium", "hard"]);
 export const questStatus = pgEnum("quest_status", ["draft", "published"]);
 
+// Which grading strategy judge.ts dispatches to — see src/server/runners/.
+// sandbox-exec is the original (and only implemented) C/C++ sanitizer flow;
+// the other three are Phase 7 additions, some not built yet (dockerfile-check
+// deliberately last — see docs/MASTER_PLAN.md §9's Phase 7 entry for why).
+export const questRunner = pgEnum("quest_runner", [
+  "sandbox-exec",
+  "io-match",
+  "dockerfile-check",
+  "git-assert",
+]);
+
 export const quests = pgTable("quests", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
@@ -120,6 +131,11 @@ export const quests = pgTable("quests", {
     .notNull()
     .references(() => user.id),
   status: questStatus("status").notNull().default("draft"),
+  runner: questRunner("runner").notNull().default("sandbox-exec"),
+  // Shape depends on `runner` — e.g. io-match's { entryFile, cases: [...] }.
+  // sandbox-exec needs none of this (judge.sh works by file-extension
+  // convention), so it stays null for every quest using that runner.
+  runnerSpec: jsonb("runner_spec"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -162,7 +178,19 @@ export const questSubmissions = pgTable(
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    index("quest_submissions_quest_user_idx").on(table.questId, table.userId),
+    // Covering the badge-eligibility "is this the user's first submission
+    // to this quest" query (orders by submittedAt ASC LIMIT 1 within a
+    // questId+userId match) — equality columns first, sort column last, so
+    // Postgres can satisfy the WHERE and the ORDER BY from the same index
+    // scan without a separate sort step. Supersedes the older
+    // (questId, userId)-only index: any query that only needs that pair
+    // still uses this one via its leftmost prefix, so keeping both would
+    // just be redundant bloat.
+    index("quest_submissions_quest_user_submitted_idx").on(
+      table.questId,
+      table.userId,
+      table.submittedAt,
+    ),
     // Same commit shouldn't be recorded as a submission twice regardless of
     // circumstance (webhook retry edge cases, etc.) — same idempotency
     // discipline as every other table in the ingestion pipeline.

@@ -2,8 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "./db";
 import { quests, questSubmissions } from "./schema";
 import { account } from "./auth-schema";
-import { gradingQueue } from "./grading-queue";
-import { GRADABLE_TAGS } from "./badges";
+import { gradingQueues, isGradableRunner } from "./grading-queue";
 
 const QUEST_BRANCH_PREFIX = "quest/";
 
@@ -65,9 +64,14 @@ export async function recordQuestSubmissionIfApplicable(params: {
   if (submission) {
     console.log(`[quests] submission recorded: ${quest.slug} by user ${linkedAccount.userId}`);
 
-    if (quest.tags.some((tag) => GRADABLE_TAGS.includes(tag))) {
-      await gradingQueue.add("grade", { submissionId: submission.id });
-      console.log(`[quests] grading job enqueued: submission=${submission.id}`);
+    // Gradability is a runner-implementation question, not a tag question
+    // — tags (memory/multithreading) only decide which *badges* a clean
+    // verdict might additionally earn (see badges.ts), not whether the
+    // submission gets graded at all. An io-match quest has neither of
+    // those tags and still needs to run through the judge.
+    if (isGradableRunner(quest.runner)) {
+      await gradingQueues[quest.runner].add("grade", { submissionId: submission.id });
+      console.log(`[quests] grading job enqueued: submission=${submission.id} runner=${quest.runner}`);
     }
   }
 

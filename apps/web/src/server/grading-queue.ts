@@ -1,13 +1,30 @@
 import { Queue } from "bullmq";
 import { connection } from "./queue";
 
-// Deliberately its own queue and its own worker process (judge-worker.ts),
-// never sharing either with push-events. Ingestion is trusted, fast,
-// structured work; grading runs untrusted code someone else wrote, at
-// wall-clock costs an order of magnitude higher — a slow or hung
-// submission here must never back up the activity feed.
+// Deliberately its own set of queues, never sharing with push-events.
+// Ingestion is trusted, fast, structured work; grading runs untrusted code
+// someone else wrote, at wall-clock costs an order of magnitude higher.
 export type GradingJobData = {
   submissionId: string;
 };
 
-export const gradingQueue = new Queue<GradingJobData>("quest-grading", { connection });
+// One queue per runner type, not one shared queue — validated against
+// BullMQ's own docs (multiple Queue/Worker instances sharing one Redis
+// connection is the documented pattern; concurrency is a per-Worker/
+// per-queue setting, not per-job-name within a shared queue, so different
+// runner types wanting different concurrency need different queues).
+// sandbox-exec stays low (TSan's scheduling sensitivity); io-match has no
+// such constraint. Only covers implemented runners — dockerfile-check and
+// git-assert get their own queue once they're actually built.
+// Hyphenated, not colon-separated — BullMQ reserves `:` as its own Redis
+// key delimiter internally and rejects a queue name containing one.
+export const gradingQueues = {
+  "sandbox-exec": new Queue<GradingJobData>("quest-grading-sandbox-exec", { connection }),
+  "io-match": new Queue<GradingJobData>("quest-grading-io-match", { connection }),
+} as const;
+
+export type GradableRunner = keyof typeof gradingQueues;
+
+export function isGradableRunner(runner: string): runner is GradableRunner {
+  return runner in gradingQueues;
+}

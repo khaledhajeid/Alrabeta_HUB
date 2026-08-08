@@ -411,12 +411,19 @@ design system rather than restyled later.*
 ### Phase 7 — Quest Runner & Content Buildout
 *Why next: this is the actual product expansion — new grading architecture
 (§3) plus real content in the launch Path (§1), which needs a design
-system to land in and a safe pipeline to ship through (Phase 6).*
-- [ ] Quest runner abstraction: `io-match`, `dockerfile-check`, `git-assert`
-      runner types, all under the same hardened sandbox model as Phase 5
-- [ ] Backend Engineering Foundations content: real quests across all four
-      tracks (Git, Bash/Linux, Docker, advanced C/C++) — enough to
-      actually test the runner types against real content, not stubs
+system to land in and a safe pipeline to ship through (Phase 6). In
+progress — see `docs/TODO.md` for the granular breakdown.*
+- [x] Quest runner abstraction: `judge.ts` orchestrates, `sandbox-exec` and
+      `io-match` implemented as separate hardened runner modules, each
+      with its own BullMQ queue/concurrency. `dockerfile-check` and
+      `git-assert` deliberately not yet — see the risk table above; both
+      need their own dedicated build, `dockerfile-check` especially so
+- [x] `io-match` real-E2E-verified (a genuine Foundations quest, both a
+      failed and a passing real submission graded correctly through the
+      full pipeline)
+- [ ] Backend Engineering Foundations content: one Bash quest exists;
+      needs real breadth across all four tracks before this is a real
+      launch surface, not a single proof point
 - [ ] Paths as a real browsing structure on `/quests`, not just a tag
 
 ### Phase 8 — Gamification Expansion

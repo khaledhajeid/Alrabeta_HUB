@@ -23,6 +23,8 @@ async function main() {
       difficulty: "easy" as const,
       tags: ["algorithms", "warmup"],
       points: 20,
+      runner: "sandbox-exec" as const,
+      runnerSpec: null,
       promptMarkdown: `The classic, for a reason — if you haven't done it in a while, it's worth doing again.
 
 ## The problem
@@ -61,6 +63,8 @@ An empty list and a single-node list should both come back correctly reversed, w
       difficulty: "medium" as const,
       tags: ["systems", "c", "memory"],
       points: 80,
+      runner: "sandbox-exec" as const,
+      runnerSpec: null,
       promptMarkdown: `This one's smaller than it looks. That's usually how leaks are.
 
 ## The setup
@@ -104,6 +108,8 @@ Find every allocation in this function (there's more than one), work out which o
       difficulty: "hard" as const,
       tags: ["systems", "c", "multithreading"],
       points: 150,
+      runner: "sandbox-exec" as const,
+      runnerSpec: null,
       promptMarkdown: `Somebody on the team wrote a "simple" hit counter for tracking how many times a shared resource gets touched. It compiles. It runs. It even gives a plausible-looking number most of the time.
 
 It's wrong.
@@ -149,6 +155,70 @@ You have real options here, not just "add a mutex": a lock, an atomic type, per-
 
 That last ThreadSanitizer point isn't optional flavor text — it's literally how this gets graded once the automated reviewer is live. A version that "works" on your machine but a TSan run would flag isn't done.`,
     },
+    {
+      slug: "extract-failed-logins",
+      title: "Extract the Failed Logins",
+      summary: "Parse a simple log format and print just the usernames that failed to log in.",
+      difficulty: "easy" as const,
+      tags: ["bash", "text-processing", "foundations"],
+      points: 30,
+      runner: "io-match" as const,
+      runnerSpec: {
+        entryFile: "solution.sh",
+        cases: [
+          {
+            name: "mixed success and failure",
+            stdin:
+              "2026-01-01T10:00:00 LOGIN user=alice status=success\n" +
+              "2026-01-01T10:01:00 LOGIN user=bob status=failed\n" +
+              "2026-01-01T10:02:00 LOGIN user=carol status=failed\n" +
+              "2026-01-01T10:03:00 LOGIN user=dave status=success",
+            expected_stdout: "bob\ncarol",
+          },
+          {
+            name: "no failures",
+            stdin: "2026-01-01T10:00:00 LOGIN user=eve status=success",
+            expected_stdout: "",
+          },
+        ],
+      },
+      promptMarkdown: `Your first Bash quest — this one's graded differently from the C/C++ ones: your \`solution.sh\` gets run against a set of stdin/stdout test cases directly, no valgrind or sanitizers involved. Get the output exactly right and you're done.
+
+## The setup
+
+You're handed log lines like this on stdin, one per line:
+
+\`\`\`
+2026-01-01T10:00:00 LOGIN user=alice status=success
+2026-01-01T10:01:00 LOGIN user=bob status=failed
+2026-01-01T10:02:00 LOGIN user=carol status=failed
+2026-01-01T10:03:00 LOGIN user=dave status=success
+\`\`\`
+
+## What to do
+
+Write \`solution.sh\` (a Bash script) that reads lines from stdin and prints
+the username of every \`status=failed\` line, one per line, in the order
+they appeared — nothing else. For the example above, that's:
+
+\`\`\`
+bob
+carol
+\`\`\`
+
+If nothing failed, print nothing.
+
+## What "done" looks like
+
+- Exact output, including order — this is graded by direct comparison
+  against expected output, not a fuzzy match.
+- No dependency beyond what a stock \`bash\` gives you — no \`grep -P\`,
+  no \`jq\`, no assuming a tool exists beyond core Bash builtins and
+  standard POSIX utilities. Part of the point is doing this with the
+  tools that are always there.
+- Handles the empty-result case (no failed logins) by printing nothing,
+  not an error.`,
+    },
   ];
 
   for (const quest of seedQuests) {
@@ -163,6 +233,8 @@ That last ThreadSanitizer point isn't optional flavor text — it's literally ho
           difficulty: quest.difficulty,
           tags: quest.tags,
           points: quest.points,
+          runner: quest.runner,
+          runnerSpec: quest.runnerSpec,
           promptMarkdown: quest.promptMarkdown,
           updatedAt: new Date(),
         },
