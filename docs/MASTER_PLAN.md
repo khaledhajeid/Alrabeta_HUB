@@ -538,10 +538,13 @@ by a re-run `/impeccable critique` before it's considered done.*
 - [x] 7.5.D Elevation applied, replacing bare borders on every genuinely
       raised surface (nav, mobile dropdown, list containers, two cards);
       tabular row dividers and the quest-detail submissions list untouched
-- [ ] 7.5.E Real type scale + break the one-row-template-for-everything
-      pattern
-- [ ] 7.5.F Gamification made visible (badge/tier display, submission
-      result redesign) — UI only, no new schema/currency
+- [x] 7.5.E Real type scale (deliberate use of Tailwind's existing scale,
+      not new tokens) + quest/repo catalogs are now card grids, activity
+      feed is a real timeline; commit list correctly untouched structurally
+- [x] 7.5.F Gamification made visible: `SubmissionStatus` + `BadgePill`
+      components, badges surfaced on profile and quest detail (incl. a
+      pre-solve "earn this" hint), contrast verified computationally —
+      UI only, no new schema/currency, Phase 8 untouched
 - [ ] 7.5.G Accessibility/robustness fixes the audit found directly
       (`--ember` contrast, status-dot aria, mobile-menu focus trap,
       tag-pill overflow, `loading.tsx`/`error.tsx`, `next/image`)

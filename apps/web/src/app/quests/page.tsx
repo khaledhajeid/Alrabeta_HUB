@@ -56,26 +56,29 @@ export default async function QuestsPage({
           </p>
         </div>
       ) : (
-        <div className="reveal-list mt-6 divide-y divide-line overflow-hidden rounded-lg bg-surface shadow-resting">
+        // Phase 7.5.E: a browsable catalog reads as cards, not a bordered
+        // row list — the row template that used to be reused for every
+        // content type on this site regardless of shape. Title promoted to
+        // text-base font-semibold so it actually anchors the card instead
+        // of sitting in the same 12–14px band as its own metadata.
+        <div className="reveal-list mt-6 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
           {visible.map((quest) => (
             <Link
               key={quest.id}
               href={`/quests/${quest.slug}`}
-              className="flex items-center justify-between gap-4 px-5 py-4 transition-[background-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:translate-x-0.5 hover:bg-surface-2"
+              className="flex flex-col gap-3 rounded-lg bg-surface p-5 shadow-resting transition-[box-shadow,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:-translate-y-0.5 hover:shadow-raised"
             >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium text-text">{quest.title}</span>
-                  <span className="font-mono text-xs text-text-muted">{quest.difficulty}</span>
-                  {quest.tags.map((t) => (
-                    <TagPill key={t} tag={t} />
-                  ))}
-                </div>
-                <p className="mt-1 truncate text-sm text-text-muted">{quest.summary}</p>
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-base leading-snug font-semibold text-text">{quest.title}</h2>
+                <span className="shrink-0 font-mono text-xs text-text-muted">{quest.points} pts</span>
               </div>
-              <span className="shrink-0 font-mono text-sm text-text-muted">
-                {quest.points} pts
-              </span>
+              <p className="line-clamp-2 text-sm text-text-muted">{quest.summary}</p>
+              <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+                <span className="font-mono text-xs text-text-muted">{quest.difficulty}</span>
+                {quest.tags.map((t) => (
+                  <TagPill key={t} tag={t} />
+                ))}
+              </div>
             </Link>
           ))}
         </div>
