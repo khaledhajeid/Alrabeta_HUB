@@ -251,6 +251,47 @@ It doesn't matter what the three commits actually *do* — this quest is graded 
 
 Unlike the C/C++ or Bash quests, nothing here runs or compiles — this one's graded by inspecting your actual \`git log\`, not your code's output.`,
     },
+    {
+      slug: "containerize-it-right",
+      title: "Containerize It Right",
+      summary: "Write a Dockerfile that builds clean, runs as a real user, and stays small.",
+      difficulty: "easy" as const,
+      tags: ["docker", "foundations"],
+      points: 40,
+      runner: "dockerfile-check" as const,
+      runnerSpec: {
+        assertions: [
+          { type: "builds-successfully" },
+          { type: "runs-as-non-root" },
+          { type: "no-latest-tag" },
+          { type: "image-size-under", megabytes: 200 },
+          { type: "hadolint-clean" },
+        ],
+      },
+      promptMarkdown: `A Dockerfile that builds is the easy part. One that builds *responsibly* is what actually gets reviewed favorably: a pinned base, a real non-root user, no wasted layers, nothing a linter would flag on sight.
+
+## What to do
+
+Add a single file at the root of your repo, \`Dockerfile\`, that builds an image around any tiny script or command you like. What the container actually does when it runs does not matter, this quest is graded on how the Dockerfile is built, not the payload inside it.
+
+Your \`Dockerfile\` needs to:
+
+- **Build successfully**, no manual flags or context beyond the repo root.
+- **Pin its base image to a real tag**, not \`:latest\` and not an implicit, untagged \`FROM\` line.
+- **Run as a non root user.** Create one, switch to it with \`USER\`, and do not leave the container running as root by default.
+- **Stay under 200MB.** A slim base and a minimal install list get you there easily, an unpinned \`apt-get install\` with no cleanup usually will not.
+- **Pass hadolint clean.** No warnings, no errors, nothing.
+
+## What "done" looks like
+
+- \`docker build\` succeeds against your repo as is.
+- The built image's \`USER\` is set to something other than root.
+- The \`FROM\` line names a real, non \`latest\` tag.
+- The image comes in under 200MB.
+- hadolint reports zero findings against your \`Dockerfile\`.
+
+This one is graded by actually building your image in a locked down, network restricted sandbox and inspecting the result, plus a static lint pass, not by a human skimming your Dockerfile.`,
+    },
   ];
 
   for (const quest of seedQuests) {

@@ -74,7 +74,28 @@ services:
     volumes:
       - forgejo_data:/data
 
+  # The one route off dockerfile-check-internal, which is deliberately
+  # provisioned with no WAN route of its own (see
+  # infra/sandbox-dockerfile-check/README.md). Every dockerfile-check job
+  # attaches only to that internal network, so this proxy is the sole path
+  # a build's RUN steps (or Kaniko's own registry pulls) have to the real
+  # internet, and squid.conf allowlists exactly the registry and package
+  # mirror hosts the runner needs, denying everything else.
+  dockerfile-check-proxy:
+    build:
+      context: ./sandbox-dockerfile-check/proxy
+    container_name: dockerfile-check-proxy
+    restart: unless-stopped
+    networks:
+      - default
+      - dockerfile-check-internal
+
 volumes:
   pgdata:
   redisdata:
   forgejo_data:
+
+networks:
+  dockerfile-check-internal:
+    internal: true
+    name: dockerfile-check-internal

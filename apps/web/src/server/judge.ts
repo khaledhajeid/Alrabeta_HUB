@@ -5,6 +5,7 @@ import { run } from "./runners/exec";
 import { runSandboxExec } from "./runners/sandbox-exec";
 import { runIoMatch } from "./runners/io-match";
 import { runGitAssert } from "./runners/git-assert";
+import { runDockerfileCheck } from "./runners/dockerfile-check";
 import type { JudgeVerdict, RunnerContext } from "./runners/types";
 
 export type { JudgeVerdict } from "./runners/types";
@@ -60,8 +61,8 @@ async function cloneRepo(params: { ownerLogin: string; repoName: string; destPat
  * Fetches a submission's code from Forgejo and dispatches it to the
  * matching runner (see src/server/runners/). The fetch/extract step is
  * shared across runner types deliberately — sandbox-exec, io-match, and
- * dockerfile-check (once built) only ever need a file snapshot at one
- * commit, so there's one shared code path here rather than each runner
+ * dockerfile-check only ever need a file snapshot at one commit, so
+ * there's one shared code path here rather than each runner
  * re-implementing archive handling. git-assert is the one exception:
  * assertions like "no merge commits" need real git history, not a tarball
  * snapshot, so it gets its own branch below (a real `git clone`) instead
@@ -108,7 +109,7 @@ export async function judgeSubmission(params: {
       case "io-match":
         return await runIoMatch(ctx);
       case "dockerfile-check":
-        throw new Error(`runner "${params.runner}" is not implemented yet`);
+        return await runDockerfileCheck(ctx);
     }
   } finally {
     await rm(workDir, { recursive: true, force: true });
