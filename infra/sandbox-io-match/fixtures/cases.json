@@ -1,0 +1,1 @@
+[{"name": "basic greeting", "stdin": "World", "expected_stdout": "Hello, World!"}]

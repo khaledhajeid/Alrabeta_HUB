@@ -102,26 +102,52 @@ decisions that haven't been made yet.
 
 ## Phase 7 — Quest Runner & Content Buildout
 
-- [ ] Design the runner-type abstraction: `quests` table gains a `runner`
-      type + `spec` field (or equivalent); `judge.ts` dispatches instead
-      of assuming C/C++ unconditionally
-- [ ] Extract the existing C/C++ sanitizer flow into the `sandbox-exec`
-      runner without changing its behavior (refactor, not rewrite —
-      Phase 5's hardened flag set and Violet-tier logic must survive
-      unchanged)
-- [ ] Implement `io-match` runner (stdin→stdout test cases, hardened
-      container, for Bash/scripting quests)
-- [ ] Implement `dockerfile-check` runner (`docker build` + image
-      inspection: non-root user, exposed ports, layer count/size)
-- [ ] Implement `git-assert` runner (clone submitted branch, assert
-      against `git log`/reflog structure)
-- [ ] Re-verify each new runner against known-good/known-bad fixtures
-      before it grades anything real — same discipline as Phase 5's
-      fixture re-verification after every hardening change
-- [ ] Author real content for Backend Engineering Foundations: Git
-      mastery, Linux/Bash scripting, Docker containerization, advanced
-      C/C++ tracks — enough quests per track to exercise each runner
-      against real content, not stubs
+- [x] Schema: `quests.runner` enum (sandbox-exec/io-match/dockerfile-check/
+      git-assert) + `quests.runnerSpec` jsonb. Also replaced
+      `quest_submissions`'s (questId, userId) index with a covering
+      (questId, userId, submittedAt) index for the badge-eligibility "first
+      submission" query — validated against Postgres docs (equality columns
+      first, sort column last, avoids a separate sort step)
+- [x] Runner-type abstraction: `judge.ts` is now an orchestrator
+      (fetch → extract → dispatch), `src/server/runners/` holds one module
+      per runner type + a shared discriminated `JudgeVerdict` union
+- [x] Extracted the existing C/C++ sanitizer flow into `runners/sandbox-exec.ts`
+      unchanged (Phase 5's hardened flag set and Violet-tier logic intact —
+      re-verified via real E2E, not just "the diff looks like a pure move")
+- [x] Implemented `io-match` runner: new `infra/sandbox-io-match/` image
+      (bash/python3/node, non-root, no custom seccomp needed — validated
+      against Docker's stock default profile), `runner.sh`, fixtures for
+      all three interpreters. Found and fixed a real bug before trusting it
+      (a `jq` call missing `-n` silently produced zero output under closed
+      stdin — see the image's README) — same fail-open shape as Phase 0/5's
+      bugs, same discipline caught it
+- [x] BullMQ queue split by runner type (`grading-queue.ts`), each with
+      independently tuned concurrency (sandbox-exec: 2, io-match: 8) —
+      validated against BullMQ's own docs (shared Redis connection across
+      multiple Queue/Worker instances is the documented pattern; concurrency
+      is per-Worker, so different concurrency per runner type needs
+      different queues, not job-name branching within one). Found and fixed
+      a real bug: BullMQ queue names can't contain `:`, caught by `next build`
+      failing at page-data-collection time, not by inspection
+- [x] Enqueue routing fixed to be runner-based, not tag-based — tags
+      (memory/multithreading) only ever decided *badge* eligibility, not
+      gradability; an io-match quest has neither tag and still needs
+      grading. Removed the now-dead `GRADABLE_TAGS` export accordingly
+- [x] Real E2E test: `extract-failed-logins` (new Bash Foundations quest)
+      pushed as a genuinely corrupted script first (found honestly, not
+      staged — see PR) → graded `verdict: "failed"` with the exact
+      actual-vs-expected diff; pushed again fixed → `verdict: "violet"`,
+      `status: "passed"`, correctly zero badges (Foundations quests aren't
+      badge-eligible — that's gated by quest tags, unaffected by this work)
+- [ ] Implement `dockerfile-check` runner — deliberately not in this slice,
+      needs its own Phase-0-style hardening pass (Docker-in-Docker is a
+      materially harder security problem than the other three runners, see
+      docs/MASTER_PLAN.md §9's Phase 7 entry)
+- [ ] Implement `git-assert` runner — needs a real `git clone`/`fetch`
+      fetch path (history-aware assertions can't work off a tarball
+      snapshot), not built this slice either
+- [ ] Author more Foundations content beyond the one io-match quest —
+      enough per track to be a real launch surface, not a single proof point
 - [ ] Paths as a real browsing/filtering structure on `/quests`, not just
       a tag pill
 

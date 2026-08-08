@@ -12,14 +12,15 @@ import type { JudgeVerdict } from "./judge";
 // it never ran is not the same claim as TSan reporting "clean" because it
 // looked and found nothing.
 const TAG_BADGE_MAP: Record<string, { slug: string; check: (v: JudgeVerdict) => boolean }> = {
-  memory: { slug: "zero-leak", check: (v) => v.valgrind.clean },
-  multithreading: { slug: "race-free", check: (v) => v.tsan.clean && !v.tsan.skipped },
+  // v.runner narrows first — memory/multithreading tags only ever apply to
+  // sandbox-exec quests by content-authoring convention, and only that
+  // runner's verdict shape carries valgrind/tsan fields at all.
+  memory: { slug: "zero-leak", check: (v) => v.runner === "sandbox-exec" && v.valgrind.clean },
+  multithreading: {
+    slug: "race-free",
+    check: (v) => v.runner === "sandbox-exec" && v.tsan.clean && !v.tsan.skipped,
+  },
 };
-
-// Same list gates whether quest-submissions.ts even enqueues a grading job
-// in the first place — a quest tagged neither way has nothing for the
-// sandbox judge to check, so there's no reason to run it.
-export const GRADABLE_TAGS = Object.keys(TAG_BADGE_MAP);
 
 async function isFirstSubmissionForQuest(questId: string, userId: string, submissionId: string) {
   const earliest = await db.query.questSubmissions.findFirst({
