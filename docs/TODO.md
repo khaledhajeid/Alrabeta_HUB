@@ -139,10 +139,24 @@ decisions that haven't been made yet.
       actual-vs-expected diff; pushed again fixed → `verdict: "violet"`,
       `status: "passed"`, correctly zero badges (Foundations quests aren't
       badge-eligible — that's gated by quest tags, unaffected by this work)
-- [ ] Implement `dockerfile-check` runner — deliberately not in this slice,
-      needs its own Phase-0-style hardening pass (Docker-in-Docker is a
-      materially harder security problem than the other three runners, see
-      docs/MASTER_PLAN.md §9's Phase 7 entry)
+- [x] `dockerfile-check` security PoC — `infra/sandbox-dockerfile-check/`,
+      standalone, not yet wired into `judge.ts`. Rejected Docker-in-Docker
+      entirely (no privileged flag, no daemon, no Sysbox host dependency)
+      in favor of Kaniko (unprivileged, daemonless build) + a squid
+      egress-allowlist sidecar the build container reaches through a
+      Docker `--internal` network with no WAN route of its own. 9/9
+      fixture-validated (`./poc-test.sh`), including proving the boundary
+      is the missing WAN route and not just the `HTTPS_PROXY` env var (a
+      variant that explicitly `unset`s it inside the `RUN` step still
+      fails, for a network reason not a proxy 403). Found 6 real bugs
+      before trusting it — wrong CDN hostname, Kaniko not forwarding `-e`
+      env vars into `RUN` steps (needs `--build-arg` instead), busybox
+      `wget` not tunneling HTTPS through a proxy, `skopeo`'s `User` field
+      being absent rather than empty for root images, a `/dev/shm`-quota
+      fixture that was accidentally testing the wrong mechanism, and this
+      dev box missing `timeout`/`gtimeout` — see the README for detail on
+      each. Full TS integration (types.ts/judge.ts/grading-queue.ts
+      wiring, a seeded quest) is the next slice, pending sign-off.
 - [x] Implement `git-assert` runner — a genuinely different trust model
       than `sandbox-exec`/`io-match`: it doesn't execute anything the
       submitter wrote, it inspects real git history (commit count, merge
