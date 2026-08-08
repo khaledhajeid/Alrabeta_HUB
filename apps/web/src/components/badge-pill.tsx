@@ -29,6 +29,10 @@ export function BadgePill({ slug }: { slug: string }) {
     >
       <SparkIcon width="12" height="12" />
       {info?.label ?? slug}
+      {/* Phase 7.5.H re-audit: title-only tooltips are unreliable for
+          screen readers and unavailable on touch entirely — a real gap
+          the closing re-audit found in a component this same phase built. */}
+      {info?.description && <span className="sr-only"> — {info.description}</span>}
     </span>
   );
 }

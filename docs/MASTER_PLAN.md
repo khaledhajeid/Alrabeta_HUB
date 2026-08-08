@@ -300,6 +300,53 @@ Full lettered execution breakdown (7.5.A through 7.5.H — foundations,
 identity, motion, depth, hierarchy, gamification visibility, accessibility
 fixes, verification) lives in `docs/TODO.md`.
 
+### Closing the phase: the re-audit (2026-08-08)
+
+Ran the same dual-agent `/impeccable critique` process used to open this
+phase, against the same surfaces, as the actual exit gate — not a status
+update, a genuine independent re-check. Full report:
+`.impeccable/critique/2026-08-08T18-28-15Z__apps-web-home-nav-quests-quest-detail.md`.
+
+**Score: 16/40 → 26/40 (Poor → Acceptable).** Both agents independently
+verified every one of the four originally-named findings fixed *live* —
+real measurements (contrast ratios, bounding rects, keyboard event
+traces, grep counts), not the changelog taken on faith:
+- Motion is real, consistent, and respects reduced motion — including the
+  `::view-transition-*` pseudo-element gap most implementations miss.
+- Elevation is on 9 real surfaces now, was 1 (`shadow-lg` on a dropdown).
+- The nav/logo are legible at every breakpoint and the logo link hits a
+  real 44px touch target (was 28×28).
+- The badge/gamification system renders with real data on two surfaces,
+  plus a pre-solve hint that didn't exist before.
+
+The re-audit also did its actual job — it found things the shipped work
+missed:
+- **`--signal` failed WCAG AA in light mode** (3.59–3.77:1), the identical
+  failure class as the `--ember` bug 7.5.G had just fixed, and it hit the
+  brand-new `SubmissionStatus` "Passed" text directly. Fixed immediately
+  (emerald-600 → emerald-700, 5.23–5.48:1), verified live.
+- The activity feed's "live" indicator dot repeated the exact
+  color-only/`aria-hidden`-with-no-alternative pattern 7.5.G fixed for the
+  service-status dots — missed on this one. Fixed immediately, same
+  pattern.
+- `BadgePill`'s description lived only in a `title` attribute — unreliable
+  for screen readers, unavailable on touch. Fixed with a real `sr-only`
+  alternative.
+
+**Deliberately not fixed, logged instead of scope-creeping:** the
+submission-status row doesn't self-update — no SSE/polling on the
+quest-detail submissions list, unlike the activity feed. This is real
+product work (extending real-time infrastructure to a second surface), not
+UI/motion/accessibility polish, and doesn't belong in a phase whose job was
+the latter. Revisit alongside Phase 8 or whenever submission UX gets its
+own slice. Two more items — sparse-data grids at low item counts, and
+difficulty labels with no visual coding — are P3/opinion-level, noted for
+a future pass, not blocking.
+
+**Performance held.** Lighthouse against a production build: 95/100
+performance, 100/100 accessibility, 0 CLS on home/quests/quest-detail —
+the CSS-first motion approach cost nothing measurable.
+
 ---
 
 ## 3. Core engine expansion: the quest runner
@@ -520,15 +567,15 @@ progress — see `docs/TODO.md` for the granular breakdown.*
       launch surface, not a single proof point
 - [ ] Paths as a real browsing structure on `/quests`, not just a tag
 
-**Paused** — the remaining two items wait for Phase 7.5 (below) to clear
-its exit checklist first, per direct instruction and the standing
-peak-potential rule.
+**Resumed** — Phase 7.5 cleared its exit checklist (16/40 → 26/40,
+re-audit-verified). The remaining two items above are back in play.
 
-### Phase 7.5 — UI/UX Redesign, A-to-Z
+### Phase 7.5 — UI/UX Redesign, A-to-Z ✅ done
 *Inserted ahead of the rest of Phase 7. Full rationale, audit results, and
 benchmark research in §2.5. Not a new feature phase — a motion/depth/
 hierarchy/gamification-visibility pass over what's already shipped, gated
-by a re-run `/impeccable critique` before it's considered done.*
+by a re-run `/impeccable critique` before it's considered done. Closed out
+2026-08-08 — closing audit results in §2.5.*
 - [x] 7.5.A Motion & elevation design tokens
 - [x] 7.5.B Nav height + logo lockup rebuild (found and fixed a real
       mobile-overflow regression along the way — see `docs/TODO.md`)
@@ -545,11 +592,15 @@ by a re-run `/impeccable critique` before it's considered done.*
       components, badges surfaced on profile and quest detail (incl. a
       pre-solve "earn this" hint), contrast verified computationally —
       UI only, no new schema/currency, Phase 8 untouched
-- [ ] 7.5.G Accessibility/robustness fixes the audit found directly
-      (`--ember` contrast, status-dot aria, mobile-menu focus trap,
-      tag-pill overflow, `loading.tsx`/`error.tsx`, `next/image`)
-- [ ] 7.5.H Verification: Playwright, contrast, performance budget,
-      re-critique, `DESIGN.md` v2
+- [x] 7.5.G Accessibility/robustness: `--ember` contrast fixed, status-dot
+      aria alternative, mobile-menu focus trap + Escape (keyboard-tested,
+      not just coded), tag-select past 6 tags (verified against real
+      9-tag data), `loading.tsx`/`error.tsx`, `next/image` on both avatars
+- [x] 7.5.H Verification: full Playwright pass, computed contrast (caught
+      and fixed a second real bug — `--signal` also failed light-mode AA),
+      Lighthouse (95/100 perf, 100/100 a11y, 0 CLS), dual-agent re-critique
+      (16/40 → 26/40, independently verified live), `DESIGN.md` rewritten
+      to v2
 
 ### Phase 8 — Gamification Expansion
 - [ ] Two-currency system (points/rank, spendable shop currency)
@@ -612,3 +663,9 @@ Formerly "open questions" — resolved:
    unless 7.5.C hits a concrete gap CSS can't cover — consistent with the
    "performance first" constraint and this project's existing
    no-unnecessary-dependency posture.
+6. **Phase 7.5 closed** (2026-08-08): 16/40 → 26/40, re-audit-verified
+   live by an independent dual-agent pass, not a rubber-stamped changelog
+   read. Live-updating submission status (SSE/polling on the quest-detail
+   submissions list) explicitly deferred as real-time infrastructure work,
+   not UI polish — tracked as a follow-up alongside Phase 8, not silently
+   dropped. Phase 7's remaining runner/content items resume.

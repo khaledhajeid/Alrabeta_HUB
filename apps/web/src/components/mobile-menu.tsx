@@ -1,14 +1,52 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function MobileMenu({ links }: { links: Array<{ href: string; label: string }> }) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Phase 7.5.G: neither Escape nor a focus trap existed before — a
+  // keyboard user who opened this could Tab straight through to page
+  // content behind the (visually overlapping) panel, and Escape did
+  // nothing. Scoped to the button + panel, which are already adjacent in
+  // DOM order, so no portal or extra ref bookkeeping is needed.
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        buttonRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab" || !containerRef.current) return;
+
+      const focusables = containerRef.current.querySelectorAll<HTMLElement>("a[href], button");
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
 
   return (
-    <div className="sm:hidden">
+    <div className="sm:hidden" ref={containerRef}>
       <button
+        ref={buttonRef}
         type="button"
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}

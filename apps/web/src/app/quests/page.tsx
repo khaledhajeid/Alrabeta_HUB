@@ -3,6 +3,11 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/server/db";
 import { quests } from "@/server/schema";
 import { TagPill } from "@/components/tag-pill";
+import { TagFilterSelect } from "@/components/tag-filter-select";
+
+// Phase 7.5.G: past this many, the pill row itself becomes more complex
+// than the content it filters — collapse to a select instead.
+const MAX_INLINE_TAGS = 6;
 
 export default async function QuestsPage({
   searchParams,
@@ -23,31 +28,36 @@ export default async function QuestsPage({
     <div className="mx-auto max-w-5xl px-6 py-12">
       <h1 className="text-xl font-semibold text-text">Quests</h1>
 
-      {allTags.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/quests"
-            className={`flex min-h-11 items-center rounded-full border px-3 text-xs font-medium transition-[color,border-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) active:scale-95 ${
-              !tag
-                ? "border-text text-text"
-                : "border-line text-text-muted hover:text-text"
-            }`}
-          >
-            All
-          </Link>
-          {allTags.map((t) => (
+      {allTags.length > 0 &&
+        (allTags.length > MAX_INLINE_TAGS ? (
+          <div className="mt-4">
+            <TagFilterSelect tags={allTags} current={tag} />
+          </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link
-              key={t}
-              href={`/quests?tag=${encodeURIComponent(t)}`}
+              href="/quests"
               className={`flex min-h-11 items-center rounded-full border px-3 text-xs font-medium transition-[color,border-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) active:scale-95 ${
-                tag === t ? "border-text text-text" : "border-line text-text-muted hover:text-text"
+                !tag
+                  ? "border-text text-text"
+                  : "border-line text-text-muted hover:text-text"
               }`}
             >
-              {t}
+              All
             </Link>
-          ))}
-        </div>
-      )}
+            {allTags.map((t) => (
+              <Link
+                key={t}
+                href={`/quests?tag=${encodeURIComponent(t)}`}
+                className={`flex min-h-11 items-center rounded-full border px-3 text-xs font-medium transition-[color,border-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) active:scale-95 ${
+                  tag === t ? "border-text text-text" : "border-line text-text-muted hover:text-text"
+                }`}
+              >
+                {t}
+              </Link>
+            ))}
+          </div>
+        ))}
 
       {visible.length === 0 ? (
         <div className="mt-6 rounded-lg border border-dashed border-line px-5 py-10 text-center">

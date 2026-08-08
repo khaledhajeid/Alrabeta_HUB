@@ -35,7 +35,16 @@ export default async function HomePage() {
                 aria-hidden
                 className={`h-1.5 w-1.5 rounded-full ${status[service.key] ? "bg-signal" : "bg-danger"}`}
               />
-              <span className="font-mono text-xs text-text-muted">{service.label}</span>
+              {/* Phase 7.5.G: the dot was color-only and aria-hidden — a real
+                  WCAG 1.4.1 failure, a screen reader used to hear just
+                  "Forgejo, Postgres, Redis" with zero up/down signal. */}
+              <span className="font-mono text-xs text-text-muted">
+                {service.label}
+                <span className="sr-only">
+                  {" — "}
+                  {status[service.key] ? "operational" : "down"}
+                </span>
+              </span>
             </div>
           ))}
         </div>
