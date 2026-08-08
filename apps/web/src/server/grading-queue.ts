@@ -14,13 +14,15 @@ export type GradingJobData = {
 // per-queue setting, not per-job-name within a shared queue, so different
 // runner types wanting different concurrency need different queues).
 // sandbox-exec stays low (TSan's scheduling sensitivity); io-match has no
-// such constraint. Only covers implemented runners — dockerfile-check and
-// git-assert get their own queue once they're actually built.
+// such constraint; git-assert is network-bound (the clone), not CPU-bound.
+// Only covers implemented runners — dockerfile-check gets its own queue
+// once it's actually built.
 // Hyphenated, not colon-separated — BullMQ reserves `:` as its own Redis
 // key delimiter internally and rejects a queue name containing one.
 export const gradingQueues = {
   "sandbox-exec": new Queue<GradingJobData>("quest-grading-sandbox-exec", { connection }),
   "io-match": new Queue<GradingJobData>("quest-grading-io-match", { connection }),
+  "git-assert": new Queue<GradingJobData>("quest-grading-git-assert", { connection }),
 } as const;
 
 export type GradableRunner = keyof typeof gradingQueues;

@@ -365,9 +365,9 @@ strategies keep the hardened sandbox model already validated in Phase 5
 | Runner type | Used by | What it actually checks |
 |---|---|---|
 | `sandbox-exec` *(exists)* | Advanced C/C++ track | Compile + run C/C++ under valgrind/ASan/UBSan/TSan |
-| `io-match` | Linux/Bash track, future Backend & API Path | Run submitted code (Bash/Python/Node) against stdin→stdout test cases in the same hardened container |
+| `io-match` *(exists)* | Linux/Bash track, future Backend & API Path | Run submitted code (Bash/Python/Node) against stdin→stdout test cases in the same hardened container |
 | `dockerfile-check` | Docker containerization track | `docker build` the submission, then inspect the *resulting image* — non-root user, exposed ports, layer count, size — not just "did it build" |
-| `git-assert` | Git mastery track | Clone the submitted branch, run assertions against `git log`/reflog structure (e.g. "no merge commits," "exactly 3 commits after rebase") |
+| `git-assert` *(exists)* | Git mastery track | Full clone of the submission's repo (all branches, full history), run assertions against `git log`/`rev-list` structure (no merge commits, commit count, message conventions). Reflog turned out not to be viable — it's local-only, never transferred by a clone — so assertions are scoped to what commit ancestry can actually verify |
 
 This is real, sized work — a new grading architecture, not an extension of
 the existing one. It's its own phase (Phase 7), not a task inside another
@@ -554,17 +554,26 @@ design system rather than restyled later.*
 (§3) plus real content in the launch Path (§1), which needs a design
 system to land in and a safe pipeline to ship through (Phase 6). In
 progress — see `docs/TODO.md` for the granular breakdown.*
-- [x] Quest runner abstraction: `judge.ts` orchestrates, `sandbox-exec` and
-      `io-match` implemented as separate hardened runner modules, each
-      with its own BullMQ queue/concurrency. `dockerfile-check` and
-      `git-assert` deliberately not yet — see the risk table above; both
-      need their own dedicated build, `dockerfile-check` especially so
+- [x] Quest runner abstraction: `judge.ts` orchestrates, `sandbox-exec`,
+      `io-match`, and `git-assert` implemented as separate hardened runner
+      modules, each with its own BullMQ queue/concurrency. `dockerfile-check`
+      deliberately not yet — see the risk table above, it needs its own
+      dedicated Docker-in-Docker hardening pass
 - [x] `io-match` real-E2E-verified (a genuine Foundations quest, both a
       failed and a passing real submission graded correctly through the
       full pipeline)
-- [ ] Backend Engineering Foundations content: one Bash quest exists;
-      needs real breadth across all four tracks before this is a real
-      launch surface, not a single proof point
+- [x] `git-assert` implemented and real-E2E-verified against the actual
+      Forgejo instance (not just fixtures) — a genuinely different trust
+      model from the other two runners, since it inspects git history
+      rather than executing anything the submitter wrote. Found and fixed
+      two real bugs before trusting it (a silent `git config --global`
+      failure from the sandbox's homeless non-root user, and
+      `rev-parse --verify` accepting the all-zero SHA as "verified" —
+      see `infra/sandbox-git-assert/README.md`). Seeded a real quest
+      (`three-clean-commits`, Git track)
+- [ ] Backend Engineering Foundations content: two runner-backed quests
+      exist (Bash, Git); needs real breadth across all four tracks before
+      this is a real launch surface, not proof points
 - [ ] Paths as a real browsing structure on `/quests`, not just a tag
 
 **Resumed** — Phase 7.5 cleared its exit checklist (16/40 → 26/40,
@@ -669,3 +678,14 @@ Formerly "open questions" — resolved:
    submissions list) explicitly deferred as real-time infrastructure work,
    not UI polish — tracked as a follow-up alongside Phase 8, not silently
    dropped. Phase 7's remaining runner/content items resume.
+7. **`git-assert` runner shipped** (2026-08-08), picked as the next Phase 7
+   slice over `dockerfile-check` deliberately — lower novel security risk
+   (inspects git history via fixed plumbing commands, doesn't execute
+   anything the submitter wrote, unlike Docker-in-Docker's much larger
+   attack surface). Confirmed a real architectural correction along the
+   way: the original plan's "reflog structure" assertion example isn't
+   actually viable — reflog is local-only and never transferred by a
+   clone — so the shipped assertion set (no-merge-commits, commit-count,
+   commit-message-matches) is scoped to what commit ancestry can actually
+   verify. Real E2E run against the live Forgejo instance and real
+   existing commits, not just fixtures, before trusting it.

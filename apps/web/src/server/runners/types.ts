@@ -12,6 +12,16 @@ export type RunnerContext = {
   spec: unknown;
 };
 
+// git-assert is the one exception to the shared fetch/extract contract
+// above — it needs real commit history, not a tarball snapshot, so
+// judge.ts hands it a different shape entirely: a full clone (with its
+// .git intact) plus the commit sha, rather than an extracted file tree.
+export type GitAssertContext = {
+  repoDir: string;
+  commitSha: string;
+  spec: unknown;
+};
+
 export type SandboxExecVerdict = {
   runner: "sandbox-exec";
   compiled: boolean;
@@ -42,4 +52,14 @@ export type IoMatchVerdict = {
   error?: string;
 };
 
-export type JudgeVerdict = SandboxExecVerdict | IoMatchVerdict;
+export type GitAssertVerdict = {
+  runner: "git-assert";
+  ran: boolean;
+  tests_passed: boolean;
+  checks: Array<{ name: string; passed: boolean; detail: string }>;
+  duration_ms: number;
+  verdict: "violet" | "failed";
+  error?: string;
+};
+
+export type JudgeVerdict = SandboxExecVerdict | IoMatchVerdict | GitAssertVerdict;

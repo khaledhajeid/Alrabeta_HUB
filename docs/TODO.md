@@ -143,17 +143,48 @@ decisions that haven't been made yet.
       needs its own Phase-0-style hardening pass (Docker-in-Docker is a
       materially harder security problem than the other three runners, see
       docs/MASTER_PLAN.md §9's Phase 7 entry)
-- [ ] Implement `git-assert` runner — needs a real `git clone`/`fetch`
-      fetch path (history-aware assertions can't work off a tarball
-      snapshot), not built this slice either
-- [ ] Author more Foundations content beyond the one io-match quest —
-      enough per track to be a real launch surface, not a single proof point
+- [x] Implement `git-assert` runner — a genuinely different trust model
+      than `sandbox-exec`/`io-match`: it doesn't execute anything the
+      submitter wrote, it inspects real git history (commit count, merge
+      structure, message conventions) via `git log`/`rev-list`/`cat-file`.
+      That needed a real `git clone` (all branches, full history — a
+      tarball snapshot can't provide ancestry), done on the host with the
+      same trust boundary as the existing archive download, with the
+      Forgejo token passed via a credential-helper shell function reading
+      an env var so it never appears in host process argv (`ps aux`). Only
+      the *inspection* step (git plumbing against the cloned repo) runs in
+      the hardened `--network none` container — new
+      `infra/sandbox-git-assert/` image, fixture-validated before trusting
+      it, found two real bugs first: `git config --global` silently failed
+      into stderr (the non-root `judge` user has no `$HOME` to write
+      `.gitconfig` to — fixed with `GIT_CONFIG_GLOBAL` pointed at the
+      already-writable `/tmp`), and `git rev-parse --verify` accepts the
+      all-zero SHA as git's "null object" sentinel and reports it as
+      "verified" even though no such commit exists — a real fail-open,
+      fixed by switching to `git cat-file -e <sha>^{commit}`. Both bugs
+      are documented in the image's README, same as every prior runner's
+      bug narrative. Assertion DSL kept small for v1: `no-merge-commits`,
+      `commit-count` (eq/min/max), `commit-message-matches` (regex) —
+      covers the master plan's original examples without over-building
+- [x] Real E2E, against the actual Forgejo instance and real existing
+      commits (not fixtures): the same commit graded `failed` with an
+      accurate diff (2 commits found vs. 3 expected, one message not
+      matching the pattern) under a strict spec, and `violet` under a
+      spec it actually satisfies — full pipeline (host clone with the
+      real credential path, sandboxed inspection, JSON verdict parsing)
+      validated end to end before trusting it
+- [x] Seeded a real quest: `three-clean-commits` (Git track, Foundations,
+      30pts) — "shape your history into exactly three Conventional-Commits
+      commits, no merges"
+- [ ] Author more Foundations content beyond the two runner-backed quests
+      (io-match's Bash quest, git-assert's) — enough per track to be a
+      real launch surface, not proof points
 - [ ] Paths as a real browsing/filtering structure on `/quests`, not just
       a tag pill
 
 **Resumed.** Phase 7.5 is done (16/40 → 26/40, re-audit-verified, see
-below) — the remaining four items above are back in play, next up
-whenever this phase's work continues.
+below) — the remaining items above are back in play, next up whenever
+this phase's work continues.
 
 ---
 
