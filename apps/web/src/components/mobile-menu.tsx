@@ -13,7 +13,7 @@ export function MobileMenu({ links }: { links: Array<{ href: string; label: stri
         aria-label={open ? "Close menu" : "Open menu"}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:text-text"
+        className="flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-[color,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:text-text active:scale-90"
       >
         {open ? (
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -27,7 +27,10 @@ export function MobileMenu({ links }: { links: Array<{ href: string; label: stri
       </button>
 
       {open && (
-        <div className="absolute inset-x-0 top-full z-(--z-dropdown) border-b border-line bg-surface px-4 py-3 shadow-lg">
+        // shadow-raised (Phase 7.5.D) — the violet-tinted signature
+        // elevation, replacing the generic shadow-lg default now that this
+        // project has its own depth language.
+        <div className="absolute inset-x-0 top-full z-(--z-dropdown) bg-surface px-4 py-3 shadow-raised">
           <nav className="flex flex-col">
             {links.map((link) => (
               <Link

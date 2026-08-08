@@ -18,7 +18,7 @@ export function AuthButton({ user }: { user: SessionUser }) {
         onClick={() =>
           authClient.signIn.oauth2({ providerId: "forgejo", callbackURL: "/" })
         }
-        className="flex min-h-11 items-center whitespace-nowrap rounded-md bg-accent-strong px-2.5 text-sm font-medium text-accent-ink transition-colors hover:bg-accent sm:min-h-0 sm:px-3 sm:py-1.5"
+        className="flex min-h-11 items-center whitespace-nowrap rounded-md bg-accent-strong px-2.5 text-sm font-medium text-accent-ink transition-[background-color,box-shadow,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:bg-accent hover:shadow-raised active:scale-95 sm:min-h-0 sm:px-3 sm:py-1.5"
       >
         <span className="sm:hidden">Sign in</span>
         <span className="hidden sm:inline">Sign in with Forgejo</span>
@@ -42,7 +42,7 @@ export function AuthButton({ user }: { user: SessionUser }) {
           await authClient.signOut();
           router.refresh();
         }}
-        className="flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-colors hover:text-text sm:h-auto sm:w-auto sm:text-sm sm:hover:bg-transparent"
+        className="flex h-11 w-11 items-center justify-center rounded-md text-text-muted transition-[color,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:text-text active:scale-90 sm:h-auto sm:w-auto sm:text-sm sm:hover:bg-transparent"
       >
         <svg
           viewBox="0 0 24 24"

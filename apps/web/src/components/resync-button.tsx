@@ -30,7 +30,7 @@ export function ResyncButton({ owner, name }: { owner: string; name: string }) {
             setPending(false);
           }
         }}
-        className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:text-text hover:bg-surface-2 disabled:opacity-50"
+        className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-text-muted transition-[color,background-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:bg-surface-2 hover:text-text active:scale-95 disabled:opacity-50 disabled:active:scale-100"
       >
         {pending ? "Resyncing…" : "Resync from Forgejo"}
       </button>

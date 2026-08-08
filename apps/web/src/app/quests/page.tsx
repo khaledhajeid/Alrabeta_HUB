@@ -27,7 +27,7 @@ export default async function QuestsPage({
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href="/quests"
-            className={`flex min-h-11 items-center rounded-full border px-3 text-xs font-medium transition-colors ${
+            className={`flex min-h-11 items-center rounded-full border px-3 text-xs font-medium transition-[color,border-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) active:scale-95 ${
               !tag
                 ? "border-text text-text"
                 : "border-line text-text-muted hover:text-text"
@@ -39,7 +39,7 @@ export default async function QuestsPage({
             <Link
               key={t}
               href={`/quests?tag=${encodeURIComponent(t)}`}
-              className={`flex min-h-11 items-center rounded-full border px-3 text-xs font-medium transition-colors ${
+              className={`flex min-h-11 items-center rounded-full border px-3 text-xs font-medium transition-[color,border-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) active:scale-95 ${
                 tag === t ? "border-text text-text" : "border-line text-text-muted hover:text-text"
               }`}
             >
@@ -56,12 +56,12 @@ export default async function QuestsPage({
           </p>
         </div>
       ) : (
-        <div className="mt-6 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+        <div className="reveal-list mt-6 divide-y divide-line overflow-hidden rounded-lg bg-surface shadow-resting">
           {visible.map((quest) => (
             <Link
               key={quest.id}
               href={`/quests/${quest.slug}`}
-              className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-surface-2"
+              className="flex items-center justify-between gap-4 px-5 py-4 transition-[background-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:translate-x-0.5 hover:bg-surface-2"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">

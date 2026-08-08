@@ -17,7 +17,13 @@ export async function Nav() {
   const user = session?.user ?? null;
 
   return (
-    <header className="relative border-b border-line bg-surface">
+    // shadow-resting (Phase 7.5.D) replaces the flat border-b — same
+    // --line-colored ring, plus a whisper of lift so the bar reads as
+    // sitting above the page rather than just divided from it.
+    // viewTransitionName anchors this element across route-transition.tsx's
+    // navigations (see globals.css's site-header rules) — the header is the
+    // one thing on screen that must never appear to move or refade.
+    <header className="relative bg-surface shadow-resting" style={{ viewTransitionName: "site-header" }}>
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
         {/* py-2 gives a 44px-tall hit area around the 28px icon (this
             project's own documented touch-target minimum); -ml-2 cancels a

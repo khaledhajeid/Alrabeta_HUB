@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { jetbrainsMono, geistSans } from "@/fonts";
 import { ThemeScript } from "@/components/theme-script";
 import { Nav } from "@/components/nav";
+import { RouteTransition } from "@/components/route-transition";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         <Nav />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1">
+          <RouteTransition>{children}</RouteTransition>
+        </main>
       </body>
     </html>
   );

@@ -62,14 +62,14 @@ export default async function RepoDetailPage({
           <p className="text-sm text-text-muted">No commits ingested yet.</p>
         </div>
       ) : (
-        <div className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+        <div className="reveal-list divide-y divide-line overflow-hidden rounded-lg bg-surface shadow-resting">
           {commitLog.map((commit) => (
             <a
               key={commit.id}
               href={commit.url}
               target="_blank"
               rel="noreferrer"
-              className="flex items-start justify-between gap-4 px-5 py-3 hover:bg-surface-2"
+              className="flex items-start justify-between gap-4 px-5 py-3 transition-[background-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:translate-x-0.5 hover:bg-surface-2"
             >
               <div className="min-w-0">
                 <div className="truncate text-sm text-text">{commit.message.split("\n")[0]}</div>
