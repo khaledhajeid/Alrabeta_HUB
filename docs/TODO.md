@@ -28,7 +28,11 @@ decisions that haven't been made yet.
 ### DevOps
 - [x] `.github/workflows/ci.yml` — typecheck, lint, build on push to
       `main` + every PR, real Postgres/Redis service containers
-- [ ] Confirm CI runs green on the PR for this phase
+- [x] Confirm CI runs green on the PR for this phase (fixed one real bug
+      found on first run: `next typegen` needed before `tsc --noEmit` —
+      LayoutProps/PageProps come from generated `.next/types`, which a
+      fresh CI checkout doesn't have yet, unlike a local dir that's
+      already run `next dev`/`build` at least once)
 - [ ] Enable branch protection on `main` (require the CI check, require
       PR review, disallow direct push/force-push)
 - [ ] Commitlint + commit-msg git hook enforcing Conventional Commits
