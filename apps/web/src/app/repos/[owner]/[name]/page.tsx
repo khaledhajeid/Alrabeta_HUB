@@ -72,7 +72,9 @@ export default async function RepoDetailPage({
               className="flex items-start justify-between gap-4 px-5 py-3 transition-[background-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:translate-x-0.5 hover:bg-surface-2"
             >
               <div className="min-w-0">
-                <div className="truncate text-sm text-text">{commit.message.split("\n")[0]}</div>
+                <div className="truncate text-sm font-medium text-text">
+                  {commit.message.split("\n")[0]}
+                </div>
                 <div className="mt-0.5 font-mono text-xs text-text-muted">
                   {commit.authorUsername ?? commit.authorName}
                   {commit.branch !== repo.defaultBranch && ` · ${commit.branch}`}

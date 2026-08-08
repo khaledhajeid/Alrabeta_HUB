@@ -1,18 +1,14 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { quests, questSubmissions } from "@/server/schema";
+import { quests, questSubmissions, badges } from "@/server/schema";
 import { TagPill } from "@/components/tag-pill";
 import { QuestMarkdown } from "@/components/quest-markdown";
-
-const SUBMISSION_LABEL: Record<string, string> = {
-  submitted: "Submitted",
-  passed: "Passed",
-  failed: "Failed",
-  needs_review: "Needs review",
-};
+import { BadgePill } from "@/components/badge-pill";
+import { SubmissionStatus } from "@/components/submission-status";
+import { TAG_TO_BADGE_SLUG } from "@/lib/badge-info";
 
 export default async function QuestDetailPage({
   params,
@@ -39,6 +35,27 @@ export default async function QuestDetailPage({
       })
     : [];
 
+  // One extra query, only when there's something to look up — badges are
+  // keyed by questSubmissionId, so a submission's earned badge (if any)
+  // isn't on the questSubmissions row itself.
+  const submissionBadges =
+    submissions.length > 0
+      ? await db.query.badges.findMany({
+          where: inArray(
+            badges.questSubmissionId,
+            submissions.map((s) => s.id),
+          ),
+        })
+      : [];
+  const badgesBySubmission = new Map<string, string[]>();
+  for (const b of submissionBadges) {
+    const existing = badgesBySubmission.get(b.questSubmissionId) ?? [];
+    existing.push(b.slug);
+    badgesBySubmission.set(b.questSubmissionId, existing);
+  }
+
+  const eligibleBadgeSlug = quest.tags.map((t) => TAG_TO_BADGE_SLUG[t]).find(Boolean);
+
   const branchName = `quest/${quest.slug}`;
 
   return (
@@ -53,6 +70,13 @@ export default async function QuestDetailPage({
       <p className="mt-1.5 text-sm text-text-muted">
         {quest.points} pts · by {quest.author?.name ?? "unknown"}
       </p>
+      {/* Shown before the quest is ever solved — the badge system used to
+          be invisible until you'd already earned one blindly. */}
+      {eligibleBadgeSlug && (
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-text-muted">
+          Solve this clean to earn <BadgePill slug={eligibleBadgeSlug} />
+        </p>
+      )}
 
       {/* One reading column for everything below the header — prose, the
           submit instructions, and submission history all share the same
@@ -87,15 +111,22 @@ export default async function QuestDetailPage({
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+            // Phase 7.5.F: this is the row the whole redesign was really
+            // about — a submission result used to be a plain text label,
+            // the same visual weight as its own commit SHA. reveal-list
+            // gives it the entrance 7.5.C deliberately deferred to here.
+            <div className="reveal-list divide-y divide-line overflow-hidden rounded-lg bg-surface shadow-resting">
               {submissions.map((s) => (
-                <div key={s.id} className="flex items-center justify-between px-5 py-3">
+                <div key={s.id} className="flex items-center justify-between gap-3 px-5 py-3">
                   <span className="font-mono text-xs text-text-muted">
                     {s.commitSha.slice(0, 8)}
                   </span>
-                  <span className="text-sm text-text">
-                    {SUBMISSION_LABEL[s.status] ?? s.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {(badgesBySubmission.get(s.id) ?? []).map((slug) => (
+                      <BadgePill key={slug} slug={slug} />
+                    ))}
+                    <SubmissionStatus status={s.status} />
+                  </div>
                 </div>
               ))}
             </div>

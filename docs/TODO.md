@@ -259,27 +259,49 @@ potential before moving on" rule.
       to redesign, not this pass's
 
 ### 7.5.E — Information hierarchy & content differentiation
-- [ ] Real type scale beyond "h1 vs. everything else" — quest titles, point
-      values, tags, timestamps currently all sit in the same 12–14px band
-- [ ] Break the one-row-template-for-everything pattern: quest catalog
-      becomes browsable cards (not a bordered row list), activity feed gets
-      timeline treatment, repo directory differentiated from the commit
-      list (which stays dense/tabular — that one's correct as a list)
+- [x] Real type scale applied deliberately (Tailwind's own default scale
+      already fits a product register's tight-ratio guidance — the fix was
+      consistent *use*, not new tokens): catalog-card titles promoted to
+      `text-base font-semibold` (16px/600), metadata standardized on
+      `text-xs` (12px), summaries stay `text-sm` (14px) — a real 3-step
+      hierarchy instead of everything sitting in the same band
+- [x] Quest catalog and repo directory are now card grids
+      (`grid-cols-[repeat(auto-fill,minmax(260px,1fr))]`), each with a
+      distinct card shape for what the entity actually is (points+tags vs.
+      private-badge+branch) rather than the same row template reused
+      verbatim. Activity feed is a real timeline now — a connecting line
+      between nodes, sitting directly on the page canvas instead of inside
+      a bordered box, since the line does the grouping work a border used
+      to. Commit list is untouched structurally, correctly — still
+      genuinely tabular, only got the 7.5.D/E typography touch (message
+      promoted to `font-medium`)
+- [x] Verified responsive: card grids collapse to one column at 375px with
+      zero horizontal overflow (`scrollWidth === innerWidth`, not eyeballed)
 
 ### 7.5.F — Gamification made visible (UI only — no new schema/currency)
-- [ ] Submission result (`Passed`/`Failed`/`Needs review`) redesigned with
-      real visual weight: color + icon + the 7.5.C entrance motion, not a
-      14px text row indistinguishable from a timestamp
-- [ ] A minimal badge/tier display surfaced on profile + quest detail —
-      `--accent`'s own origin story (the Violet-tier badge signal) is
-      currently invisible in the shipped product. Two-currency/streaks/shop
-      stay exactly where they are, in Phase 8 — this is "show the badges
-      that already exist," not "build the economy"
-- [ ] Tone lock: quiet and confident, not game-arcade — a clean color/icon
-      state change plus one deliberate motion beat, matching the
-      Vercel/Linear/Raycast restraint this project has already committed
-      to, not a confetti burst. The "reward" comes from precision and
-      real weight, not decoration volume
+- [x] Submission result redesigned: a new `SubmissionStatus` component —
+      icon + color + `font-semibold`, using `--signal`/`--danger` (state,
+      not brand — same distinction `DESIGN.md` already draws for the
+      status dots) instead of a plain text row. Wrapped in `reveal-list`,
+      fulfilling the entrance 7.5.C deliberately deferred here
+- [x] A minimal badge/tier display now exists: new `BadgePill` component
+      (spark icon, violet, matching the existing `systems`-tag treatment)
+      surfaced on the profile page (real query against the `badges` table,
+      honest empty state if none yet) and on quest detail (badges earned
+      per submission, plus a "solve this clean to earn X" hint shown
+      *before* the quest is ever solved — the badge system used to be
+      invisible until you'd already earned one blindly). New
+      `lib/badge-info.ts` holds display metadata, deliberately kept
+      separate from `server/badges.ts`'s grading/eligibility logic so the
+      UI layer doesn't import server-only types. Two-currency/streaks/shop
+      untouched, exactly where they already were — Phase 8
+- [x] Tone lock held: a spark icon and a checkmark, not a trophy or a
+      confetti burst — verified against the actual rendered result, not
+      just intended
+- [x] `BadgePill`'s accent-on-tint contrast verified computationally (real
+      browser luminance math, same method as Phase 6): dark 6.44:1, light
+      4.68:1 — both clear AA (4.5:1), light with a real but not generous
+      margin, noted honestly rather than rounded up
 
 ### 7.5.G — Accessibility & robustness (fixes the audit found directly)
 - [ ] `--ember` light-mode contrast bug: 3.39:1 on rendered quest code

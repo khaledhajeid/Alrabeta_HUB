@@ -14,20 +14,42 @@ function timeAgo(iso: string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function Row({ event, isLive }: { event: ActivityEvent; isLive?: boolean }) {
+// Phase 7.5.E: a live push feed is a sequence of moments in time, not a
+// bordered box of rows — the same divide-y card wrapper every other list
+// on this site used to share. It sits directly on the page canvas; the
+// connecting line does the grouping work the border used to.
+function Row({
+  event,
+  isLive,
+  isLast,
+}: {
+  event: ActivityEvent;
+  isLive?: boolean;
+  isLast?: boolean;
+}) {
   return (
-    <div className="flex items-start gap-3 px-5 py-3">
+    <div className="relative flex gap-4 pb-6 last:pb-0">
+      {!isLast && (
+        <span aria-hidden className="absolute top-3 bottom-0 left-[5px] w-px bg-line" />
+      )}
+      {/* ring-ink "cuts" the connecting line where the node sits, so the
+          dot reads as a node on the line rather than overlapping it. */}
       <span
-        className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${isLive ? "bg-signal" : "bg-line"}`}
+        className={`relative z-10 mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full ring-4 ring-ink ${
+          isLive ? "bg-signal" : "border border-line bg-surface-2"
+        }`}
         aria-hidden
       />
       <div className="min-w-0 flex-1">
-        <div className="text-sm text-text">
-          <span className="font-medium">{event.pusher}</span> pushed{" "}
-          {event.commitCount} {event.commitCount === 1 ? "commit" : "commits"} to{" "}
-          <span className="font-mono text-text-muted">
-            {event.repo}@{event.branch}
-          </span>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 text-sm text-text">
+            <span className="font-medium">{event.pusher}</span> pushed{" "}
+            {event.commitCount} {event.commitCount === 1 ? "commit" : "commits"} to{" "}
+            <span className="font-mono text-text-muted">
+              {event.repo}@{event.branch}
+            </span>
+          </div>
+          <span className="shrink-0 font-mono text-xs text-text-muted">{timeAgo(event.at)}</span>
         </div>
         {event.headMessage && (
           <div className="mt-0.5 truncate font-mono text-sm text-text-muted">
@@ -35,7 +57,6 @@ function Row({ event, isLive }: { event: ActivityEvent; isLive?: boolean }) {
           </div>
         )}
       </div>
-      <span className="shrink-0 font-mono text-xs text-text-muted">{timeAgo(event.at)}</span>
     </div>
   );
 }
@@ -66,14 +87,14 @@ export function ActivityFeed({ initial }: { initial: ActivityEvent[] }) {
   }
 
   return (
-    // reveal-list (7.5.C): a deliberate stagger for the first screenful.
-    // shadow-resting (7.5.D) replaces the flat border — rows keep their
-    // divide-y dividers (this is still dense, list-like content), the
-    // container itself now reads as a raised surface rather than just an
-    // outlined box.
-    <div className="reveal-list divide-y divide-line overflow-hidden rounded-lg bg-surface shadow-resting">
+    <div className="reveal-list">
       {events.map((event, i) => (
-        <Row key={`${event.at}-${i}`} event={event} isLive={liveIds.has(event.at)} />
+        <Row
+          key={`${event.at}-${i}`}
+          event={event}
+          isLive={liveIds.has(event.at)}
+          isLast={i === events.length - 1}
+        />
       ))}
     </div>
   );
