@@ -58,6 +58,42 @@ with something else.
 
 ---
 
+## 0.5. Scale & audience — confirmed, and it's architectural
+
+Every "14-person" reference elsewhere in this document (admin panel scope,
+security sizing, PR-review cadence) describes the **current beta rollout**,
+not a permanent design ceiling. Confirmed:
+
+- **Two different answers on two different timelines.** Onboarding stays
+  invite/admin-provisioned for now — a small private circle (~14 people,
+  mostly 42 Amman alumni). The ultimate audience is junior-to-mid
+  developers validating backend skills more broadly (regionally or
+  globally), and the data model, job-queue design, and content need to
+  hold up there even while the actual rollout stays small.
+- **What that changes concretely**: `quest_submissions`, `badges`, the
+  BullMQ grading queue, and anything Phase 7's quest-runner introduces
+  should be designed against hundreds-to-thousands of users, not
+  hand-tuned for 14 (e.g. don't assume a fixed, small submission volume
+  anywhere a query pattern or index choice would need to change at real
+  scale).
+- **What stays deferred, deliberately — not forgotten**: CAPTCHAs,
+  automated email verification, heavy anti-cheat/plagiarism detection.
+  Real work, genuinely postponable until the platform actually opens up.
+  This is a scope decision, not an oversight — don't build it early just
+  because "bulletproof" was the standing instruction for Phase 6; that
+  instruction was about process (branch protection, CI, commit hygiene),
+  not about pulling forward public-facing SaaS surface area on a
+  guess-timeline.
+- **Branding stays general-purpose.** No content, copy, or UI decision
+  should assume the reader already knows this circle's private context —
+  the product should read as premium and self-explanatory to a stranger,
+  even though today's real users all know each other.
+
+This directly shapes how Phase 7 (§9) gets architected — see the updated
+Phase 7 entry.
+
+---
+
 ## 1. Content strategy: Paths, grounded in real market data
 
 Research question: what should the platform actually teach, for a MENA/Jordan-leaning
