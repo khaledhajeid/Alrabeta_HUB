@@ -1,15 +1,24 @@
 # Alrabeta Hub — Master Plan (Developer Hub Pivot)
 
-Status: **planning document, no application code shipped against it yet.**
-Supersedes the informal phase tracking in the root `README.md`'s "Not done
-yet" section as of this write-up. Phases 0–5 (infra, identity, ingestion,
-Discord, the sandbox grading engine) are done and unaffected by any of this.
+Status: **decisions locked, execution underway.** Supersedes the informal
+phase tracking in the root `README.md`'s "Not done yet" section. Phases 0–5
+(infra, identity, ingestion, Discord, the sandbox grading engine) are done
+and unaffected by any of this. See `docs/TODO.md` for the granular,
+continuously-updated task checklist this plan expands into.
 
 This is the central reference for the pivot from "C/C++ systems-quest
 checker for the Circle" to "market-driven developer hub." Rule going
 forward, per direction: **we do not start a new phase until the current one
 is at its peak and follows industry best practice** — so every phase below
 ends with an explicit exit checklist, not a vague "done when it feels done."
+
+**Note on phase numbering**: §9 originally proposed DevOps Foundation
+(Phase 6) and Visual Identity (Phase 7) as separate sequential phases.
+Direction was to execute them together as one — merged below into Phase 6,
+with every phase after it shifted down by one (old Phase 8 Quest Runner is
+now Phase 7, and so on through old Phase 12 AI Review, now Phase 11).
+Global numbering stays continuous with the existing Phase 0–5 history
+already referenced in commits/PRs/README.
 
 ---
 
@@ -88,16 +97,32 @@ high-frequency (56% of postings) but not quest-shaped** — a real K8s
 exercise needs a cluster and more than 90 minutes. It's a longer-form
 stretch path, not a standard quest.
 
-**Proposed Paths:**
+**Decided**: not "DevOps" (confirmed as the wrong frame per the research
+above) — the launch umbrella is **Backend Engineering Foundations**, one
+Path covering four tracks. Broader Paths (Backend & API/TypeScript,
+Containers & Cloud, CI/CD & Automation) are real and stay on the roadmap,
+but launch narrower and prove one Path well rather than spreading thin
+across five on day one. The quest-runner architecture (§3) is what makes
+this extensible without a restructure later — a new Path is a curation
+grouping over existing `tags`, not a schema change.
+
+**Backend Engineering Foundations** *(launch Path)*:
+
+| Track | Contents | Format note |
+|---|---|---|
+| Git mastery | Rebase, conflict resolution, bisect, history rewriting | Standard 30–90 min quests — flagship track, not filler. The research says this is where juniors actually lose points. |
+| Linux/Bash scripting | Shell scripting, text processing, Linux fundamentals | Standard quests. |
+| Docker containerization | Build/fix/inspect a container via the `dockerfile-check` runner (§3) | Standard quests. |
+| Advanced C/C++ (systems) | Memory safety, concurrency — the existing Systems content | Unchanged grading (valgrind/TSan) — this is the platform's real differentiator, folded into the launch Path rather than kept as a separately-branded track. |
+
+**Future Paths** *(post-launch, roadmap, not in Phase 7's initial content)*:
 
 | Path | Contents | Format note |
 |---|---|---|
-| **Foundations** | Git workflows (rebase, conflict resolution, bisect), Bash/shell scripting, Linux fundamentals | Standard 30–90 min quests. Treat as flagship, not filler — the research says this is where juniors actually lose points. |
-| **Systems** *(existing)* | C/C++, memory safety, concurrency | Unchanged — this is the platform's real differentiator, keep investing here. |
-| **Backend & API** | TypeScript/Node, REST/API integration, library usage, testing | Standard quests. |
-| **Containers & Cloud** | Docker (build/fix/inspect a container), light AWS CLI-scoped tasks | Standard quests — explicitly *not* "learn AWS," scoped tasks only. |
-| **CI/CD & Automation** | Write/fix a pipeline config for a stated goal, Python scripting tasks | Standard quests. |
-| **Deep Infra** *(stretch, post-launch)* | Kubernetes, Terraform/IaC | Explicitly longer-form, not the 30–90 min quest UI — don't force it into a format it doesn't fit. |
+| Backend & API | TypeScript/Node, REST/API integration, library usage, testing | Standard quests. |
+| Containers & Cloud | Light AWS CLI-scoped tasks (beyond the Docker track above) | Explicitly *not* "learn AWS," scoped tasks only. |
+| CI/CD & Automation | Write/fix a pipeline config for a stated goal, Python scripting tasks | Standard quests. |
+| Deep Infra *(stretch)* | Kubernetes, Terraform/IaC | Explicitly longer-form, not the 30–90 min quest UI — don't force it into a format it doesn't fit. |
 
 Source-quality note carried over from the research: the CI/CD%, Linux
 screen-out, Docker, and Python/Terraform stats are direct citations from
@@ -110,49 +135,40 @@ right, not statistically precise.
 
 ## 2. Visual identity & design system
 
-Applying the same standard used throughout this build: no AI-generic
-defaults. The specific trap for *this* category is worth naming up front —
-"coding platform" pattern-matches to terminal-hacker dark mode with a green
-or cyan accent as hard as "AI SaaS tool" pattern-matches to cream-and-serif.
-That's not a direction, it's the reflex this whole project has otherwise
-avoided (see the deliberate rejection of gradient text, side-stripes,
-eyebrow-scaffolding elsewhere in the design guidance this project already
-follows).
+**Decided.** The "coding platform defaults to terminal-hacker green-on-black"
+trap flagged here didn't happen — the chosen direction (Vercel/Linear/Raycast:
+premium, minimalist, dark-default) is a real, deliberate register, not the
+reflex this project has otherwise avoided elsewhere (gradient text,
+side-stripes, eyebrow-scaffolding).
 
-**The actual hook already exists in the product and shouldn't be
-reinvented**: "Violet-tier" badges. The team already coined a real piece of
-brand language — a specific color, tied to a specific meaning (verified,
-not just passing). That's a stronger foundation for an identity than
-picking a fresh palette from nothing. Proposal: build the system *around*
-violet as the achievement/rarity color (reserved, earned, not decorative),
-with a separate, calmer palette carrying the actual UI surface — so violet
-stays meaningful instead of becoming wallpaper.
+- **Vibe**: Vercel / Linear / Raycast — premium, minimalist, sleek.
+- **Theme**: strict dark-mode default (deep charcoal/near-black canvas).
+  Not just OS-preference-following — dark is the actual default regardless
+  of the visitor's system setting; light stays available as an explicit
+  opt-in via the existing theme toggle.
+- **Accent**: Violet/Deep Purple as the primary brand color — confirms and
+  extends the hook already flagged above. "Violet-tier" already existed as
+  the achievement color (`--rare` in `globals.css`); it's now promoted to
+  the platform's whole identity (`--accent`), not just a badge-reserved
+  signal. Kept distinct from it: the existing green "live/success" status
+  color (service-up dots, the activity feed's live indicator) stays green —
+  that's state, not brand, and conflating the two would make an accepted
+  submission and "this is the brand" mean the same visual thing when they
+  don't.
+- **Type**: JetBrains Mono for code (already wired up as `--font-mono` —
+  no change needed there), Geist for UI text (replacing the current IBM
+  Plex Sans `--font-sans`) — Geist specifically over Inter, since it's
+  literally Vercel's own typeface and the closest match to the named
+  reference.
+- **Bilingual scope**: none for now — English-only, no RTL work.
+- **Logo**: provided (full text+icon lockup, and an icon-only mark) —
+  implemented as themeable React SVG components (`currentColor` fill, so
+  they track light/dark automatically) for in-app use, plus a fixed-color
+  icon-only SVG for the favicon (browser chrome isn't in the page's theme
+  context, so favicons need a committed color rather than one that adapts).
 
-**What I need from you before this can go further** (this is genuinely
-blocking — see the questions at the end of this message):
-
-1. Any existing visual language for "رابطة محبي أبو محمود" / "the Circle" —
-   even informal (Discord server icon, a group chat sticker, an inside
-   joke that keeps recurring). If real brand material already exists
-   in the group's culture, it should anchor this, not a fresh invention.
-2. Bilingual scope — is the UI English-only going forward, or does Arabic
-   need real support (RTL layout, not just translated strings)? The name
-   itself is Arabic; the shipped UI so far is English. This changes the
-   typography pairing entirely (Arabic/Latin type pairing is a real,
-   different design problem, not a font-swap).
-3. Tone: is this meant to look like something you'd show off publicly as a
-   portfolio piece (more restrained, professional-developer-tool register),
-   or does it lean into the group's own humor (the "أبو محمود" in-joke
-   energy)? Both are legitimate directions; they produce very different
-   systems.
-4. Dark-mode priority — the app already has light/dark, but is dark the
-   primary/default experience (standard for developer tools) or genuinely
-   equal-weight?
-
-Once those are answered, the actual deliverable here is a `DESIGN.md` +
-token system (color/type/layout, OKLCH-based) applied consistently across
-every existing surface (home, quests, repos, profile) before any new UI
-gets built on top of it — see Phase 7 in §9.
+Deliverable: `DESIGN.md` + the token system below, applied across every
+existing surface (home, quests, repos, profile) — Phase 6 in §9.
 
 ---
 
@@ -171,13 +187,13 @@ strategies keep the hardened sandbox model already validated in Phase 5
 
 | Runner type | Used by | What it actually checks |
 |---|---|---|
-| `sandbox-exec` *(exists)* | Systems | Compile + run C/C++ under valgrind/ASan/UBSan/TSan |
-| `io-match` | Backend & API, Foundations (scripting) | Run submitted code (Python/Node/Bash) against stdin→stdout test cases in the same hardened container |
-| `dockerfile-check` | Containers & Cloud | `docker build` the submission, then inspect the *resulting image* — non-root user, exposed ports, layer count, size — not just "did it build" |
-| `git-assert` | Foundations (Git) | Clone the submitted branch, run assertions against `git log`/reflog structure (e.g. "no merge commits," "exactly 3 commits after rebase") |
+| `sandbox-exec` *(exists)* | Advanced C/C++ track | Compile + run C/C++ under valgrind/ASan/UBSan/TSan |
+| `io-match` | Linux/Bash track, future Backend & API Path | Run submitted code (Bash/Python/Node) against stdin→stdout test cases in the same hardened container |
+| `dockerfile-check` | Docker containerization track | `docker build` the submission, then inspect the *resulting image* — non-root user, exposed ports, layer count, size — not just "did it build" |
+| `git-assert` | Git mastery track | Clone the submitted branch, run assertions against `git log`/reflog structure (e.g. "no merge commits," "exactly 3 commits after rebase") |
 
 This is real, sized work — a new grading architecture, not an extension of
-the existing one. It's its own phase (Phase 8), not a task inside another
+the existing one. It's its own phase (Phase 7), not a task inside another
 phase.
 
 ---
@@ -301,24 +317,26 @@ keep in sync.
    disallow direct pushes and force-push. (Direct pushes to `main` have
    happened during this project, out of necessity before this was
    formalized — this closes that.)
-2. **CI via GitHub Actions** (the app's code lives on GitHub — this is the
-   lower-friction near-term choice over Forgejo Actions, which is
-   YAML-compatible and dogfooded by the Forgejo project itself, and worth
-   revisiting later if the goal becomes consolidating everything under the
-   self-hosted stack, but isn't the right first move): typecheck, lint,
-   build on every PR, minimum bar before merge is even possible.
+2. **CI via GitHub Actions cloud runners** — confirmed. Lowest-friction,
+   zero-maintenance at this scale; Forgejo Actions stays noted as a future
+   consolidation option, not the near-term move. `.github/workflows/ci.yml`
+   runs typecheck, lint, and build on every push to `main` and every PR —
+   real Postgres/Redis service containers included, since server modules
+   connect to both at module scope even though nothing queries at build
+   time.
 3. **Commit convention enforcement**: this project already writes
    Conventional Commits by discipline — formalize it with commitlint +
    a commit-msg hook so it's structural, not just habit.
 4. **Issue tracking**: GitHub Issues + a Projects board, no new tool.
    Labels for Path/phase/priority/type; milestones map to the phases in §9.
-5. **Real CD, sized to the current $0/local-first infra**: no VPS exists
-   yet, so "deploy" today is a manual `npm run build && npm run start` on
-   the dev machine per the README. A self-hosted GitHub Actions runner on
-   that same machine turns "merge to main" into an automatic restart —
-   real continuous deployment, zero new infrastructure cost. Flagged as
-   valuable but not the first item in this list; branch protection + CI
-   delivers most of the actual safety on its own.
+5. **Real CD — deferred, not declined**: no VPS exists yet, so "deploy"
+   today is still a manual `npm run build && npm run start` on the dev
+   machine per the README. A self-hosted runner for auto-deploy-on-merge
+   was considered and explicitly passed on for now in favor of staying
+   zero-maintenance on cloud runners — branch protection + CI delivers most
+   of the actual safety on its own, and automated deploy is worth
+   revisiting once there's real hosting infra rather than a personal
+   machine.
 6. **PR/issue templates + a lightweight CODEOWNERS** — cheap, and the kind
    of thing that's much easier to add before a rush of PRs from 14 people
    than after.
@@ -329,56 +347,56 @@ keep in sync.
 
 Continuing the numbering from the existing Phases 0–5. Each phase has an
 explicit exit checklist — the "peak potential" bar — before the next one
-starts.
+starts. Granular task-level breakdown lives in `docs/TODO.md`; this stays
+the phase-level view.
 
-### Phase 6 — SDLC & DevOps Foundation
-*Why first: every later phase ships more safely once this exists; it's
-also the lowest-risk, most mechanical phase, worth clearing before
-anything with real design/architecture judgment calls.*
+### Phase 6 — DevOps Foundation & Visual Identity
+*Merged per direction — executed as one phase rather than two. Why first:
+every later phase ships more safely once the DevOps half exists, and every
+UI surface built after this point should be built once against a real
+design system rather than restyled later.*
+- [x] `.github/workflows/ci.yml`: typecheck, lint, build on push to `main`
+      and every PR, with real Postgres/Redis service containers
 - [ ] Branch protection on `main` (PR + green CI required, no direct push)
-- [ ] GitHub Actions CI: typecheck, lint, build on every PR
+      — enabled once the workflow above has run green at least once
 - [ ] Commitlint + commit-msg hook enforcing Conventional Commits
 - [ ] Issue templates, PR template, labels, milestones per phase
-- [ ] Self-hosted runner wired for auto-deploy-on-merge (stretch goal for
-      this phase, not a blocker to close it)
-
-### Phase 7 — Visual Identity & Design System
-*Why second: every UI surface built after this point should be built once,
-against a real system — not restyled later.*
-- [ ] Answers to the four questions in §2 (brand material, bilingual
-      scope, tone, dark-mode priority)
-- [ ] `DESIGN.md` + token system (OKLCH palette anchored on the existing
-      Violet-tier meaning, typography pairing, layout rules)
+- [x] Visual identity decisions locked (§2): Vercel/Linear/Raycast register,
+      strict dark default, Violet/Charcoal palette, Geist + JetBrains Mono,
+      logo assets received
+- [ ] `DESIGN.md` + token system (OKLCH, Violet-tier-anchored palette,
+      typography pairing, layout rules)
 - [ ] Existing surfaces (home, quests, repos, profile) re-skinned to the
       new system — no new pages, just the system proven against what
       already exists before it's used to build anything new
+- [ ] Logo integrated: React components (themeable, `currentColor`) in
+      navbar/auth screens, fixed-color favicon
 
-### Phase 8 — Quest Runner & Content Buildout
-*Why third: this is the actual product expansion — new grading
-architecture (§3) plus real content in the new Paths (§1), which needs a
-design system to land in (Phase 7) and a safe pipeline to ship through
-(Phase 6).*
+### Phase 7 — Quest Runner & Content Buildout
+*Why next: this is the actual product expansion — new grading architecture
+(§3) plus real content in the launch Path (§1), which needs a design
+system to land in and a safe pipeline to ship through (Phase 6).*
 - [ ] Quest runner abstraction: `io-match`, `dockerfile-check`, `git-assert`
       runner types, all under the same hardened sandbox model as Phase 5
-- [ ] At least 3–4 real quests per new Path (Foundations, Backend & API,
-      Containers & Cloud, CI/CD & Automation) — enough to actually test
-      the runner types against real content, not stubs
+- [ ] Backend Engineering Foundations content: real quests across all four
+      tracks (Git, Bash/Linux, Docker, advanced C/C++) — enough to
+      actually test the runner types against real content, not stubs
 - [ ] Paths as a real browsing structure on `/quests`, not just a tag
 
-### Phase 9 — Gamification Expansion
+### Phase 8 — Gamification Expansion
 - [ ] Two-currency system (points/rank, spendable shop currency)
 - [ ] Streaks, computed off submission history
 - [ ] Shop v1 (cosmetic items + Discord role integration)
 - [ ] Post-solve peer solution visibility
 
-### Phase 10 — Admin Panel
+### Phase 9 — Admin Panel
 - [ ] User list + role management
 - [ ] Quest CRUD (retiring `scripts/seed-quests.ts` as the only path to
       publishing a quest)
 - [ ] Submissions/grading monitor
 - [ ] Audit log
 
-### Phase 11 — Platform Hardening & Missing-Feature Pass
+### Phase 10 — Platform Hardening & Missing-Feature Pass
 *Last gate before beta invite.*
 - [ ] Quest search/filter, submission history page, public profiles
 - [ ] Discussion/hints per quest (Discord-linked is an acceptable v1)
@@ -387,24 +405,25 @@ design system to land in (Phase 7) and a safe pipeline to ship through
 - [ ] Error/empty states audited across every surface (Playwright,
       375/768/1280px, per this project's existing UI QA standard)
 
-### Phase 12 — AI Qualitative Review *(unchanged, still deliberately last)*
+### Phase 11 — AI Qualitative Review *(unchanged, still deliberately last)*
 Kept exactly where it already was — a separate, later slice on top of the
 deterministic grading engine, not folded into any of the above.
 
-**Beta invite happens after Phase 11's checklist is genuinely clear**, not
+**Beta invite happens after Phase 10's checklist is genuinely clear**, not
 before — matches the explicit "hold the brakes" direction.
 
 ---
 
-## 10. Open questions — genuinely blocking, not rhetorical
+## 10. Decisions log
 
-1. Visual identity inputs (§2, four questions) — needed before Phase 7 can
-   start for real.
-2. Confirm Path names/framing in §1, especially the "not a DevOps-engineer
-   pipeline, skills that make a backend dev competitive" framing — does
-   that match the intent, or is there real appetite for deeper infra
-   content sooner than Phase 9's "Deep Infra, stretch" placement?
-3. Self-hosted GitHub Actions runner (Phase 6, item 5) — comfortable
-   running CI/CD automation on the same personal machine that already runs
-   the Docker Compose stack, or is that a bridge to cross only once there's
-   real hosting infra?
+Formerly "open questions" — resolved:
+
+1. **Visual identity** (§2): Vercel/Linear/Raycast register, strict dark
+   default, Violet/Charcoal + Geist/JetBrains Mono, no bilingual scope,
+   logo assets provided.
+2. **Path framing** (§1): confirmed — "Backend Engineering Foundations" as
+   the launch Path (Git, Bash/Linux, Docker, advanced C/C++), broader Paths
+   and Deep Infra stay on the future roadmap, not pulled forward.
+3. **CI/CD runner**: GitHub Actions cloud runners, confirmed — zero
+   maintenance at this scale. Self-hosted runner for auto-deploy explicitly
+   deferred (§8, item 5), not declined outright.
