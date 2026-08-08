@@ -18,12 +18,12 @@ export default async function ReposPage() {
           </p>
         </div>
       ) : (
-        <div className="mt-6 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+        <div className="reveal-list mt-6 divide-y divide-line overflow-hidden rounded-lg bg-surface shadow-resting">
           {allRepos.map((repo) => (
             <Link
               key={repo.id}
               href={`/repos/${repo.ownerLogin}/${repo.name}`}
-              className="flex items-center justify-between px-5 py-4 hover:bg-surface-2"
+              className="flex items-center justify-between px-5 py-4 transition-[background-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:translate-x-0.5 hover:bg-surface-2"
             >
               <div>
                 <div className="flex items-center gap-2 text-sm font-medium text-text">

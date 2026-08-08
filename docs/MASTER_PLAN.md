@@ -532,8 +532,12 @@ by a re-run `/impeccable critique` before it's considered done.*
 - [x] 7.5.A Motion & elevation design tokens
 - [x] 7.5.B Nav height + logo lockup rebuild (found and fixed a real
       mobile-overflow regression along the way — see `docs/TODO.md`)
-- [ ] 7.5.C Motion applied (hover/focus, route transitions, list entrances)
-- [ ] 7.5.D Elevation applied, replacing bare borders on raised surfaces
+- [x] 7.5.C Motion applied (hover/focus, route transitions via React's
+      `<ViewTransition>`, list entrances) — submission-result entrance
+      deferred to 7.5.F on purpose, that's where its visual redesign lands
+- [x] 7.5.D Elevation applied, replacing bare borders on every genuinely
+      raised surface (nav, mobile dropdown, list containers, two cards);
+      tabular row dividers and the quest-detail submissions list untouched
 - [ ] 7.5.E Real type scale + break the one-row-template-for-everything
       pattern
 - [ ] 7.5.F Gamification made visible (badge/tier display, submission

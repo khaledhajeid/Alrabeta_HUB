@@ -60,7 +60,7 @@ export default async function QuestDetailPage({
       <div className="mt-8 max-w-[70ch]">
         <QuestMarkdown markdown={quest.promptMarkdown} />
 
-        <div className="mt-10 rounded-lg border border-line bg-surface p-5">
+        <div className="mt-10 rounded-lg bg-surface p-5 shadow-resting">
           <h2 className="font-mono text-sm font-semibold text-text">How to submit</h2>
           <p className="mt-1.5 text-sm text-text-muted">
             Solve it in a branch named exactly this, push it, and it&rsquo;s tagged as an attempt

@@ -66,7 +66,12 @@ export function ActivityFeed({ initial }: { initial: ActivityEvent[] }) {
   }
 
   return (
-    <div className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+    // reveal-list (7.5.C): a deliberate stagger for the first screenful.
+    // shadow-resting (7.5.D) replaces the flat border — rows keep their
+    // divide-y dividers (this is still dense, list-like content), the
+    // container itself now reads as a raised surface rather than just an
+    // outlined box.
+    <div className="reveal-list divide-y divide-line overflow-hidden rounded-lg bg-surface shadow-resting">
       {events.map((event, i) => (
         <Row key={`${event.at}-${i}`} event={event} isLive={liveIds.has(event.at)} />
       ))}

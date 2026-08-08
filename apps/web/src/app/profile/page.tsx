@@ -23,7 +23,7 @@ export default async function ProfilePage() {
     <div className="mx-auto max-w-5xl px-6 py-12">
       <h1 className="text-xl font-semibold text-text">Profile</h1>
 
-      <div className="mt-6 flex items-center gap-4 rounded-lg border border-line bg-surface p-5">
+      <div className="mt-6 flex items-center gap-4 rounded-lg bg-surface p-5 shadow-resting">
         {user.image ? (
           // eslint-disable-next-line @next/next/no-img-element -- external Forgejo avatar
           <img src={user.image} alt="" className="h-14 w-14 rounded-full" />

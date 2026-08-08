@@ -217,22 +217,46 @@ potential before moving on" rule.
       renders correctly above content with the new z-index token
 
 ### 7.5.C — Motion applied
-- [ ] Hover/focus micro-interactions beyond color: subtle transform/shadow
-      response on interactive rows, buttons, tag pills
-- [ ] Route/page transitions (View Transitions API or an equivalently thin
-      approach — no heavy client-side animation runtime unless a concrete
-      need shows up that CSS can't cover)
-- [ ] List entrances (activity feed, quest catalog, commit history) stagger
-      in on mount — one deliberate reveal per list, not a uniform reflex
-      applied everywhere
-- [ ] Submission-result state gets a real entrance (see 7.5.F — this is
-      where motion and the gamification-visibility fix meet)
+- [x] Hover/focus micro-interactions beyond color: quest/repo/commit rows
+      get a `translate-x-0.5` nudge on hover alongside the existing
+      background change; every button (sign-in CTA, sign-out, resync,
+      theme toggle, mobile menu trigger) and tag-filter pill gets
+      `active:scale-9{0,5}` press feedback — all on `--motion-fast` +
+      `--ease-out-quint`, all real CSS `transition`s, nothing JS-driven
+- [x] Route/page transitions: React's `<ViewTransition>` (works with the
+      App Router with no extra config — confirmed by reading Next's own
+      `node_modules/next/dist/docs` guide first, since AGENTS.md warns this
+      version's APIs may not match training data) via a new
+      `route-transition.tsx` client wrapper keyed on `usePathname()`,
+      wired into `layout.tsx` around `{children}`. Deliberately a plain
+      crossfade, not a directional slide — this is a product surface with
+      a flat nav, not a gallery drill-down, and the product register is
+      explicit that motion here should read as "the route changed," not
+      stage a page-load moment. The nav itself is anchored with
+      `viewTransitionName: "site-header"` plus the CSS from Next's own
+      guide so it never appears to move or refade. Added the
+      `::view-transition-*` reduced-motion coverage the existing global
+      rule structurally can't reach (pseudo-elements, not real DOM nodes —
+      also straight from Next's guide, not guessed)
+- [x] List entrances (activity feed, quest catalog, commit history) stagger
+      in via a `.reveal-list` CSS class + `nth-child` delays, capped at the
+      first 8 rows — one deliberate reveal, not a uniform reflex, and nth-
+      child keeps it pure CSS with no per-item JS delay calculation
+- [ ] Submission-result state gets a real entrance — deferred to 7.5.F,
+      where the visual redesign this motion serves actually gets built
 
 ### 7.5.D — Depth applied
-- [ ] Replace bare `border` on cards/nav/homepage surfaces with the 7.5.A
-      elevation scale where it's actually a raised surface; keep borders
-      for genuinely tabular/dense content (commit list, markdown tables) —
-      not everything gets a shadow, that's a different flatness problem
+- [x] Replaced bare `border` with the 7.5.A elevation scale on every
+      genuinely raised surface: the nav header, the mobile-menu dropdown
+      (now `shadow-raised` instead of Tailwind's generic `shadow-lg`), the
+      four list *containers* (activity feed, quest catalog, repo
+      directory, commit history), the quest-detail "how to submit" card,
+      and the profile avatar card. Rows inside the lists keep their
+      `divide-y` borders — still genuinely tabular content, per the
+      original carve-out — only the containers moved from flat border to
+      elevation. The quest-detail submissions list is untouched here too,
+      for the same reason its motion is deferred: that's 7.5.F's surface
+      to redesign, not this pass's
 
 ### 7.5.E — Information hierarchy & content differentiation
 - [ ] Real type scale beyond "h1 vs. everything else" — quest titles, point
