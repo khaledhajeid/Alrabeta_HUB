@@ -1,0 +1,4 @@
+# Lightweight — one owner for the whole repo. Exists so review requests
+# auto-assign correctly once there's more than one person with write
+# access, not because there's a real ownership split to enforce today.
+* @khaledhajeid
