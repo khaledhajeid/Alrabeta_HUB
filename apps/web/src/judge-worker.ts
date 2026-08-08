@@ -62,10 +62,16 @@ async function processGradingJob(job: Job<GradingJobData>) {
 // `docker run` and drives valgrind + up to two sanitizer builds, and
 // TSan's race detection is sensitive to host scheduling load. io-match has
 // no such constraint (no sanitizers, no scheduling-sensitive detection),
-// so it can run substantially more jobs in parallel.
+// so it can run substantially more jobs in parallel. git-assert sits
+// between the two: its cost is a `git clone` (network/IO-bound, not CPU-
+// bound like sandbox-exec) against the Forgejo host, so higher than
+// sandbox-exec is safe, but unbounded concurrency would just turn into
+// self-inflicted load on that one host — moderate until there's a reason
+// to tune it under real traffic.
 const CONCURRENCY: Record<GradableRunner, number> = {
   "sandbox-exec": 2,
   "io-match": 8,
+  "git-assert": 4,
 };
 
 (Object.keys(CONCURRENCY) as GradableRunner[]).forEach((runner) => {

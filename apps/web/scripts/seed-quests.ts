@@ -219,6 +219,38 @@ If nothing failed, print nothing.
 - Handles the empty-result case (no failed logins) by printing nothing,
   not an error.`,
     },
+    {
+      slug: "three-clean-commits",
+      title: "Three Clean Commits",
+      summary: "Shape your git history — exactly three commits, real messages, no merge noise.",
+      difficulty: "easy" as const,
+      tags: ["git", "foundations"],
+      points: 30,
+      runner: "git-assert" as const,
+      runnerSpec: {
+        baseRef: "main",
+        assertions: [
+          { type: "no-merge-commits" },
+          { type: "commit-count", op: "eq", value: 3 },
+          { type: "commit-message-matches", pattern: "^(feat|fix|docs|refactor|chore): .+" },
+        ],
+      },
+      promptMarkdown: `Most people's git history reads like a stream of consciousness: "wip", "fix", "actually fix", "why doesn't this work", "ok now it works". That's fine while you're heads-down. It's not fine by the time you open a pull request.
+
+## What to do
+
+Shape your history into **exactly three commits**, each following [Conventional Commits](https://www.conventionalcommits.org/) — \`feat:\`, \`fix:\`, \`docs:\`, \`refactor:\`, or \`chore:\`, followed by a real description — with no merge commits in the branch. If you pick up changes from \`main\` along the way, \`rebase\`, don't \`merge\`.
+
+It doesn't matter what the three commits actually *do* — this quest is graded on the shape of your history, not your files' contents. Write three real, distinct commits about anything you like (fix a typo, add a comment, whatever), following the message format above.
+
+## What "done" looks like
+
+- Exactly 3 commits ahead of \`main\`.
+- Every one of them starts with \`feat:\`, \`fix:\`, \`docs:\`, \`refactor:\`, or \`chore:\`, followed by a real description — not just the bare tag.
+- No merge commits anywhere in the branch.
+
+Unlike the C/C++ or Bash quests, nothing here runs or compiles — this one's graded by inspecting your actual \`git log\`, not your code's output.`,
+    },
   ];
 
   for (const quest of seedQuests) {

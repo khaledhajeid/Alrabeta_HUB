@@ -4,9 +4,10 @@ export function run(
   cmd: string,
   args: string[],
   timeoutMs?: number,
+  options?: { env?: NodeJS.ProcessEnv },
 ): Promise<{ stdout: string; stderr: string; code: number | null }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { timeout: timeoutMs });
+    const child = spawn(cmd, args, { timeout: timeoutMs, env: options?.env });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (d) => (stdout += d));
