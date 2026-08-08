@@ -366,7 +366,7 @@ strategies keep the hardened sandbox model already validated in Phase 5
 |---|---|---|
 | `sandbox-exec` *(exists)* | Advanced C/C++ track | Compile + run C/C++ under valgrind/ASan/UBSan/TSan |
 | `io-match` *(exists)* | Linux/Bash track, future Backend & API Path | Run submitted code (Bash/Python/Node) against stdin→stdout test cases in the same hardened container |
-| `dockerfile-check` | Docker containerization track | `docker build` the submission, then inspect the *resulting image* — non-root user, exposed ports, layer count, size — not just "did it build" |
+| `dockerfile-check` *(exists)* | Docker containerization track | Build the submission's Dockerfile with Kaniko (no Docker-in-Docker, no daemon), through an egress-allowlisted network, then inspect the resulting image: non-root user, base image tag, size, plus a hadolint static lint pass. Not just "did it build" |
 | `git-assert` *(exists)* | Git mastery track | Full clone of the submission's repo (all branches, full history), run assertions against `git log`/`rev-list` structure (no merge commits, commit count, message conventions). Reflog turned out not to be viable — it's local-only, never transferred by a clone — so assertions are scoped to what commit ancestry can actually verify |
 
 This is real, sized work — a new grading architecture, not an extension of
@@ -554,11 +554,12 @@ design system rather than restyled later.*
 (§3) plus real content in the launch Path (§1), which needs a design
 system to land in and a safe pipeline to ship through (Phase 6). In
 progress — see `docs/TODO.md` for the granular breakdown.*
-- [x] Quest runner abstraction: `judge.ts` orchestrates, `sandbox-exec`,
-      `io-match`, and `git-assert` implemented as separate hardened runner
-      modules, each with its own BullMQ queue/concurrency. `dockerfile-check`
-      deliberately not yet — see the risk table above, it needs its own
-      dedicated Docker-in-Docker hardening pass
+- [x] Quest runner abstraction: `judge.ts` orchestrates, all four runners
+      (`sandbox-exec`, `io-match`, `git-assert`, `dockerfile-check`) now
+      implemented as separate hardened runner modules, each with its own
+      BullMQ queue/concurrency. `dockerfile-check` rejected
+      Docker-in-Docker outright in favor of Kaniko plus an
+      egress-allowlisted network, see the risk table above and decision 8
 - [x] `io-match` real-E2E-verified (a genuine Foundations quest, both a
       failed and a passing real submission graded correctly through the
       full pipeline)
@@ -689,3 +690,20 @@ Formerly "open questions" — resolved:
    commit-message-matches) is scoped to what commit ancestry can actually
    verify. Real E2E run against the live Forgejo instance and real
    existing commits, not just fixtures, before trusting it.
+8. **`dockerfile-check` runner shipped** (2026-08-09), closing out Phase
+   7's runner set, all four Foundations tracks now have a working runner.
+   Split into a standalone security PoC first, then integration, per the
+   user's explicit request for a Phase-0-style hardened proof of concept
+   before any wiring into `judge.ts`. Rejected Docker-in-Docker outright
+   (no privileged flag, no daemon socket, no Sysbox host dependency) for
+   Kaniko's unprivileged, daemonless builds, gated by a squid
+   egress-allowlist sidecar reachable only from a Docker `--internal`
+   network with no WAN route of its own, that missing route being the
+   actual containment guarantee rather than the proxy env vars a
+   malicious `RUN` step could simply unset. The PoC alone found and fixed
+   six real bugs before integration started; full detail is in
+   `infra/sandbox-dockerfile-check/README.md`. Real E2E confirmed against
+   the live compose stack afterward: a clean pass, an assertion-level
+   fail with per-check detail, and the PoC's own exfiltration fixture
+   re-run through the production wiring, still hitting the same squid
+   403.

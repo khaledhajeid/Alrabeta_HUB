@@ -62,4 +62,14 @@ export type GitAssertVerdict = {
   error?: string;
 };
 
-export type JudgeVerdict = SandboxExecVerdict | IoMatchVerdict | GitAssertVerdict;
+export type DockerfileCheckVerdict = {
+  runner: "dockerfile-check";
+  ran: boolean;
+  tests_passed: boolean;
+  checks: Array<{ name: string; passed: boolean; detail: string }>;
+  duration_ms: number;
+  verdict: "violet" | "failed";
+  error?: string;
+};
+
+export type JudgeVerdict = SandboxExecVerdict | IoMatchVerdict | GitAssertVerdict | DockerfileCheckVerdict;

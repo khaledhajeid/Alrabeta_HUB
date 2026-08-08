@@ -67,11 +67,15 @@ async function processGradingJob(job: Job<GradingJobData>) {
 // bound like sandbox-exec) against the Forgejo host, so higher than
 // sandbox-exec is safe, but unbounded concurrency would just turn into
 // self-inflicted load on that one host — moderate until there's a reason
-// to tune it under real traffic.
+// to tune it under real traffic. dockerfile-check is the heaviest job of
+// the four (a real Kaniko build through the egress proxy, capped at 512m/
+// 2 cpus/90s per job in runners/dockerfile-check.ts), so it stays as
+// conservative as sandbox-exec for the same reason.
 const CONCURRENCY: Record<GradableRunner, number> = {
   "sandbox-exec": 2,
   "io-match": 8,
   "git-assert": 4,
+  "dockerfile-check": 2,
 };
 
 (Object.keys(CONCURRENCY) as GradableRunner[]).forEach((runner) => {

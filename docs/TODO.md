@@ -139,24 +139,40 @@ decisions that haven't been made yet.
       actual-vs-expected diff; pushed again fixed → `verdict: "violet"`,
       `status: "passed"`, correctly zero badges (Foundations quests aren't
       badge-eligible — that's gated by quest tags, unaffected by this work)
-- [x] `dockerfile-check` security PoC — `infra/sandbox-dockerfile-check/`,
-      standalone, not yet wired into `judge.ts`. Rejected Docker-in-Docker
-      entirely (no privileged flag, no daemon, no Sysbox host dependency)
-      in favor of Kaniko (unprivileged, daemonless build) + a squid
-      egress-allowlist sidecar the build container reaches through a
-      Docker `--internal` network with no WAN route of its own. 9/9
-      fixture-validated (`./poc-test.sh`), including proving the boundary
-      is the missing WAN route and not just the `HTTPS_PROXY` env var (a
-      variant that explicitly `unset`s it inside the `RUN` step still
-      fails, for a network reason not a proxy 403). Found 6 real bugs
-      before trusting it — wrong CDN hostname, Kaniko not forwarding `-e`
-      env vars into `RUN` steps (needs `--build-arg` instead), busybox
-      `wget` not tunneling HTTPS through a proxy, `skopeo`'s `User` field
-      being absent rather than empty for root images, a `/dev/shm`-quota
-      fixture that was accidentally testing the wrong mechanism, and this
-      dev box missing `timeout`/`gtimeout` — see the README for detail on
-      each. Full TS integration (types.ts/judge.ts/grading-queue.ts
-      wiring, a seeded quest) is the next slice, pending sign-off.
+- [x] `dockerfile-check` security PoC — `infra/sandbox-dockerfile-check/`.
+      Rejected Docker-in-Docker entirely (no privileged flag, no daemon,
+      no Sysbox host dependency) in favor of Kaniko (unprivileged,
+      daemonless build) plus a squid egress-allowlist sidecar the build
+      container reaches through a Docker `--internal` network with no WAN
+      route of its own. 9/9 fixture-validated (`./poc-test.sh`), including
+      proving the boundary is the missing WAN route and not just the
+      `HTTPS_PROXY` env var, since a variant that explicitly `unset`s it
+      inside the `RUN` step still fails, for a network reason not a proxy
+      403. Found 6 real bugs before trusting it: wrong CDN hostname,
+      Kaniko not forwarding `-e` env vars into `RUN` steps (needs
+      `--build-arg` instead), busybox `wget` not tunneling HTTPS through a
+      proxy, `skopeo`'s `User` field being absent rather than empty for
+      root images, a `/dev/shm`-quota fixture that was accidentally
+      testing the wrong mechanism, and a dev box missing
+      `timeout`/`gtimeout`. See the README for detail on each.
+- [x] `dockerfile-check` full integration — `runners/dockerfile-check.ts`
+      wired into `judge.ts`/`grading-queue.ts`/`judge-worker.ts` following
+      the same pattern as the other three runners, no custom judge image
+      needed since Kaniko/hadolint/skopeo are all upstream images doing
+      exactly what's needed. `infra/docker-compose.yml` gained the
+      `dockerfile-check-proxy` service and the pinned-name
+      `dockerfile-check-internal` network (promoted straight from the PoC,
+      dropping the `-poc-` naming). Assertion set: `builds-successfully`,
+      `runs-as-non-root`, `no-latest-tag`, `image-size-under`,
+      `hadolint-clean`, `has-healthcheck`. Real E2E verified against the
+      live compose stack, not just fixtures: a clean Dockerfile graded
+      `violet` (all 5 checks), an unpinned root-running Dockerfile graded
+      `failed` with per-check detail, and the PoC's exfiltration attempt
+      re-run through the actual production wiring still hit the same
+      squid 403, confirming the containment boundary holds end to end,
+      not just inside the standalone harness. New seeded quest:
+      `containerize-it-right` (Docker Foundations track).
+      All four Foundations tracks now have a working runner.
 - [x] Implement `git-assert` runner — a genuinely different trust model
       than `sandbox-exec`/`io-match`: it doesn't execute anything the
       submitter wrote, it inspects real git history (commit count, merge
