@@ -208,6 +208,100 @@ existing surface (home, quests, repos, profile) — Phase 6 in §9.
 
 ---
 
+## 2.5. UI/UX Redesign, A-to-Z (Phase 7.5)
+
+Phase 6 shipped a correct re-skin — tokens, dark-mode-first execution, and
+logo/type swap all landed cleanly. It did **not** ship a layout or motion
+rework, and the product owner's own assessment after using it for real is
+that it reads "gloomy, flat, lifeless" and lacks the "distinct visual
+identity that makes a modern developer tool feel truly premium." That's a
+real gap, not a false complaint — confirmed below, not just asserted.
+
+### The audit (2026-08-08)
+
+Ran a full `/impeccable critique` dual-agent audit (design review +
+detector/browser evidence, isolated from each other) against home, nav,
+quests, quest detail, and repos, both themes. Full report:
+`.impeccable/critique/2026-08-08T15-06-42Z__apps-web-home-nav-quests-quest-detail.md`.
+
+**Score: 16/40 (Poor band).** Not a subjective read — grounded in things
+that are true regardless of taste:
+- **One `transition-colors` rule exists in the entire codebase.** No
+  `@keyframes`, no animation library, no page transitions, no reveal, no
+  stagger. There's no motion system to tune because there's no motion.
+- **One `shadow-lg` exists in the entire app** (a dropdown panel). Every
+  card, nav bar, and code block uses `border` for separation; no elevation
+  scale, no semantic z-index scale beyond a single hardcoded `z-20`.
+- **Nav is `h-14` (56px)** — 12–30% shorter than the stated reference set
+  (Linear/Vercel run 64px+) for zero density gain. The desktop `Logo`
+  lockup renders at ~42.5×24px, meaning the wordmark inside it is
+  functionally illegible (~6-8px cap-height); mobile drops the wordmark
+  entirely.
+- **The gamification layer is invisible.** `DESIGN.md` documents that
+  `--accent` "grew out of the Violet-tier badge signal," but across every
+  inspected surface, zero badges/tiers/streaks render anywhere. A quest
+  submission result (`Passed`/`Failed`) is a plain 14px text row — visually
+  identical in weight to a nav link. For a "gamified" product, the single
+  highest-stakes moment in the whole loop currently has no payoff at all.
+- Real bug found in passing: `--ember` (documented in `DESIGN.md` as
+  "reserved, not yet used") is actually live as a syntax-highlight color
+  and fails WCAG AA in light mode (3.39:1, needs 4.5:1) — a
+  documentation/implementation drift the detector's source scan couldn't
+  catch (needs rendered computed-style math), but the browser-evidence pass
+  did.
+
+What's *not* wrong: the token system itself is well-reasoned (`--accent`
+deliberately kept distinct from `--signal`), dark-mode execution is
+technically clean (real computed contrast, no FOUC), copy voice has real
+personality, and the deterministic AI-slop scan came back clean (no
+gradient text, no side-stripes, no eyebrows — Phase 6's own discipline
+held). This is a motion/depth/hierarchy/gamification-visibility gap, not a
+broken-engineering one.
+
+### Benchmark research
+
+Pulled concrete, sourced specifics from the three named references plus
+Supabase (same dark-first developer-tool category, useful contrast point)
+rather than working from vibes:
+
+- **Vercel (Geist system)**: "shadow-as-border" — `box-shadow: 0 0 0 1px
+  rgba(0,0,0,.08)` replacing traditional CSS borders, layered into
+  multi-value stacks (border layer + soft elevation layer + ambient depth
+  layer + an inner highlight ring) so cards read as "built," not
+  "floating." Motion tokens: 150ms/200ms, `cubic-bezier(0.2,0,0,1)`. 8px
+  spacing base with a deliberate jump from 16px to 32px (no 20/24px in the
+  primary scale) — whitespace itself carries meaning ("nothing to prove,
+  nothing to hide").
+- **Supabase**: dark-first, near-black (`#000`–`#0f0f0f` range) with
+  exactly one accent carrying all brand weight — restraint as the whole
+  strategy, not an omission. Elevation via `backdrop-filter: blur(4px)`
+  plus a 3px focus outline at 0px offset. Directly useful as a same-
+  category (dark developer-tool dashboard) reference point since Vercel's
+  own marketing site is light-mode-first, unlike this product.
+- **Raycast**: three stated principles — fast, simple, delightful. Their
+  own 2022 redesign is a direct playbook match for this phase: bigger
+  search/icons for the thing that matters most, consolidated a scattered
+  action-bar/toast/nav-title pattern into one coherent bottom bar,
+  "Compact Mode" for a more focused view. The throughline: every visual
+  change traced back to a stated principle, not decoration for its own
+  sake — the same discipline this phase needs to apply to Alrabeta's
+  motion and depth additions.
+
+### Scope discipline
+
+This phase changes **how the existing product looks and moves**, not what
+it does. Two-currency points/shop economy, streaks, and peer-solution
+visibility stay exactly where they already are — Phase 8. The only
+gamification work pulled into this phase is making the badge/tier system
+that already exists conceptually (and already named the brand accent)
+actually render somewhere — a visibility fix, not new mechanics.
+
+Full lettered execution breakdown (7.5.A through 7.5.H — foundations,
+identity, motion, depth, hierarchy, gamification visibility, accessibility
+fixes, verification) lives in `docs/TODO.md`.
+
+---
+
 ## 3. Core engine expansion: the quest runner
 
 Today, `judge.ts`/`judge.sh` is one grading strategy, hardcoded to C/C++ +
@@ -426,6 +520,29 @@ progress — see `docs/TODO.md` for the granular breakdown.*
       launch surface, not a single proof point
 - [ ] Paths as a real browsing structure on `/quests`, not just a tag
 
+**Paused** — the remaining two items wait for Phase 7.5 (below) to clear
+its exit checklist first, per direct instruction and the standing
+peak-potential rule.
+
+### Phase 7.5 — UI/UX Redesign, A-to-Z
+*Inserted ahead of the rest of Phase 7. Full rationale, audit results, and
+benchmark research in §2.5. Not a new feature phase — a motion/depth/
+hierarchy/gamification-visibility pass over what's already shipped, gated
+by a re-run `/impeccable critique` before it's considered done.*
+- [ ] 7.5.A Motion & elevation design tokens
+- [ ] 7.5.B Nav height + logo lockup rebuild
+- [ ] 7.5.C Motion applied (hover/focus, route transitions, list entrances)
+- [ ] 7.5.D Elevation applied, replacing bare borders on raised surfaces
+- [ ] 7.5.E Real type scale + break the one-row-template-for-everything
+      pattern
+- [ ] 7.5.F Gamification made visible (badge/tier display, submission
+      result redesign) — UI only, no new schema/currency
+- [ ] 7.5.G Accessibility/robustness fixes the audit found directly
+      (`--ember` contrast, status-dot aria, mobile-menu focus trap,
+      tag-pill overflow, `loading.tsx`/`error.tsx`, `next/image`)
+- [ ] 7.5.H Verification: Playwright, contrast, performance budget,
+      re-critique, `DESIGN.md` v2
+
 ### Phase 8 — Gamification Expansion
 - [ ] Two-currency system (points/rank, spendable shop currency)
 - [ ] Streaks, computed off submission history
@@ -470,3 +587,20 @@ Formerly "open questions" — resolved:
 3. **CI/CD runner**: GitHub Actions cloud runners, confirmed — zero
    maintenance at this scale. Self-hosted runner for auto-deploy explicitly
    deferred (§8, item 5), not declined outright.
+4. **UI/UX Redesign inserted as Phase 7.5** (§2.5): triggered by direct
+   feedback on the shipped Phase 6 re-skin plus a dual-agent
+   `/impeccable critique` audit (16/40). Scoped as a visual/motion/
+   hierarchy pass over the existing product, not new mechanics — the
+   two-currency/streak/shop gamification economy stays in Phase 8
+   untouched. The rest of Phase 7 (`dockerfile-check`, `git-assert`, more
+   Foundations content, Paths browsing) pauses until 7.5 clears its exit
+   checklist, per the standing peak-potential rule.
+5. **Motion/tooling for the redesign**: no new MCP server, skill, or
+   plugin needed — `/impeccable` (design/critique/build), `context7`
+   (library docs), `firecrawl` (benchmark research), and `playwright`
+   (verification) already cover the full loop. Motion implementation
+   stays CSS-first (transitions/transforms, the View Transitions API for
+   route changes) rather than adding an animation-library dependency,
+   unless 7.5.C hits a concrete gap CSS can't cover — consistent with the
+   "performance first" constraint and this project's existing
+   no-unnecessary-dependency posture.
