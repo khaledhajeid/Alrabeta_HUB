@@ -43,6 +43,11 @@ function Row({
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 text-sm text-text">
+            {/* Phase 7.5.H re-audit: the dot above is color-only and
+                aria-hidden, the same pattern 7.5.G fixed for the
+                service-status dots but missed here — closing the gap the
+                closing re-audit found. */}
+            {isLive && <span className="sr-only">Live — </span>}
             <span className="font-medium">{event.pusher}</span> pushed{" "}
             {event.commitCount} {event.commitCount === 1 ? "commit" : "commits"} to{" "}
             <span className="font-mono text-text-muted">

@@ -151,11 +151,9 @@ decisions that haven't been made yet.
 - [ ] Paths as a real browsing/filtering structure on `/quests`, not just
       a tag pill
 
-**Paused here.** Per the standing rule (no new phase until the current one
-peaks), the remaining four items above wait until Phase 7.5 is done — the
-product owner flagged the shipped Phase 6 re-skin as "gloomy, flat,
-lifeless" and asked for a full UI/UX pass before any more runner or content
-work. Resume this list once Phase 7.5's exit checklist is clear.
+**Resumed.** Phase 7.5 is done (16/40 → 26/40, re-audit-verified, see
+below) — the remaining four items above are back in play, next up
+whenever this phase's work continues.
 
 ---
 
@@ -173,6 +171,17 @@ benchmark research (Vercel/Linear/Raycast/Supabase design-system specifics)
 are in `docs/MASTER_PLAN.md` §2.5. Executed as lettered sub-phases in order
 — each is a real gate, not a suggestion, per the project's standing "peak
 potential before moving on" rule.
+
+**Closed out 2026-08-08.** All eight sub-phases shipped across four PRs
+(#17–#20). Closing re-audit (dual-agent, same rigor as the opening one,
+`.impeccable/critique/2026-08-08T18-28-15Z__apps-web-home-nav-quests-quest-detail.md`):
+**16/40 → 26/40 (Poor → Acceptable)**, every original finding verified
+fixed live by an independent agent, not taken on faith from the changelog.
+Lighthouse on a production build: 95/100 performance, 100/100
+accessibility, 0 CLS. One real gap deliberately deferred rather than
+scope-crept into this phase: the submission-status row doesn't self-update
+(no SSE/polling) — real-time infrastructure work, not UI polish; revisit
+alongside Phase 8 or whenever submission UX gets its own slice.
 
 ### 7.5.A — Motion & elevation foundations (tokens first, no visual change yet)
 - [x] Elevation scale added to `globals.css`: `--shadow-resting`/
@@ -304,35 +313,76 @@ potential before moving on" rule.
       margin, noted honestly rather than rounded up
 
 ### 7.5.G — Accessibility & robustness (fixes the audit found directly)
-- [ ] `--ember` light-mode contrast bug: 3.39:1 on rendered quest code
-      blocks (needs 4.5:1) — either fix the color or correct DESIGN.md's
-      "reserved, not yet used" claim to match what's actually live
-      (`globals.css:229-233`)
-- [ ] Service-status dots get a text/aria-live alternative — currently
-      color-only and `aria-hidden`, a real WCAG 1.4.1 failure
-- [ ] Mobile menu gets a focus trap and an Escape handler — currently
-      neither exists
-- [ ] Tag-filter pill wall (10 unranked pills for a 4-quest catalog)
-      collapses to a search/combobox past ~5–6 tags
-- [ ] `loading.tsx` and `error.tsx` added under `app/` — currently absent
-      everywhere, meaning a blank flash on slow loads and Next's generic
-      unstyled crash screen on errors
-- [ ] Avatar `<img>` → `next/image` (`profile/page.tsx`, `auth-button.tsx`),
-      real `alt` text instead of `alt=""` on a meaningful image
+- [x] `--ember` light-mode contrast bug fixed: was 3.39:1, orange-600 →
+      orange-700 clears it at 4.94:1 (verified live post-fix, not just
+      computed in isolation). `DESIGN.md` corrected to match what's
+      actually live (it's a real syntax-highlight color, not "reserved")
+- [x] Service-status dots get an `sr-only` text alternative
+      ("Forgejo — operational"/"down") alongside the existing color dot —
+      confirmed present in the actual accessibility tree by the re-audit,
+      not just in source
+- [x] Mobile menu gets a focus trap (Tab/Shift+Tab confined to trigger +
+      panel, wraps at both ends) and an Escape handler (closes, returns
+      focus to the trigger) — verified with real scripted keyboard testing
+      by the re-audit: Tab from the last link wraps to the trigger, Escape
+      closes and refocuses correctly
+- [x] Tag-filter pill wall collapses to a native `<select>` past 6 tags —
+      verified live against real data: 9 tags in the actual seeded
+      content, correctly rendering the select instead of pills
+- [x] `loading.tsx` (skeleton blocks, not a spinner) and `error.tsx`
+      (styled retry, no raw error-message echo) added at the app root
+- [x] Both avatar renders (`profile/page.tsx`, `auth-button.tsx`) use
+      `next/image` with real `alt` text; `next.config.ts` derives the
+      allowed remote host from the same `FORGEJO_URL`/`FORGEJO_PUBLIC_URL`
+      env vars the rest of the server already reads
 
 ### 7.5.H — Verification
-- [ ] Full Playwright pass, 375/768/1280px, both themes, every touched
-      surface — this project's existing standard, not a new one
-- [ ] Contrast re-verified computationally (not eyeballed), same method as
-      Phase 6
-- [ ] Performance budget check: Lighthouse/Core Web Vitals before vs. after
-      — motion and elevation must not cost real frame time or bundle size;
-      CSS-first per 7.5.C, no animation library added unless a concrete gap
-      shows up that CSS genuinely can't cover
-- [ ] Re-run `/impeccable critique` on the same surfaces — confirm the
-      score actually moved off 16/40, not just "it looks different now"
-- [ ] `docs/DESIGN.md` updated to reflect the v2 token system (elevation,
-      motion, z-index, type scale) and logo lockup change
+- [x] Full Playwright pass, 375/768/1280px, dark theme on every touched
+      surface (home, quests, quest detail, repos, repo detail, profile) +
+      light-theme spot checks on the pages carrying real color changes —
+      zero horizontal overflow, zero console errors anywhere
+- [x] Contrast re-verified computationally, real browser luminance math —
+      and it caught a second real bug: **`--signal` also failed AA in
+      light mode** (3.59–3.77:1, the same failure class as `--ember`,
+      hitting the brand-new `SubmissionStatus` "Passed" text directly).
+      Fixed the same way: emerald-600 → emerald-700 (5.23–5.48:1),
+      verified live post-fix
+- [x] Performance budget: Lighthouse against a production build — **95/100
+      Performance, 100/100 Accessibility, 0 CLS** on home/quests/quest-
+      detail. Motion and elevation cost nothing measurable; no "before"
+      snapshot exists to diff against (no stashed pre-redesign build), so
+      this is a verified-good current state, not a literal before/after
+      delta — noted honestly rather than implying a comparison that wasn't
+      actually run
+- [x] Re-ran `/impeccable critique` as a genuine dual-agent re-audit (not
+      a rubber stamp) — **score moved 16/40 → 26/40 (Poor → Acceptable)**.
+      Both agents independently verified every one of the four originally-
+      named findings fixed *live*: motion is real and respects reduced-
+      motion (including the `::view-transition-*` pseudo-element edge case
+      most implementations miss), elevation is applied to 9 real surfaces
+      (was 1), the nav/logo are legible and hit a real 44px touch target,
+      and the badge/gamification system renders with real data. The
+      re-audit also caught two things this phase had missed: the
+      `--signal` bug above, and the activity-feed's "live" indicator dot
+      repeating the exact color-only-with-no-text-alternative bug this
+      same sub-phase fixed for the service-status dots — both fixed
+      immediately, not deferred, since they're the same bug class this
+      sub-phase exists to close out. `BadgePill`'s description (previously
+      `title`-attribute only, unreliable for screen readers and
+      unavailable on touch) also got a real `sr-only` alternative.
+      **Deliberately not fixed, logged as a follow-up instead**: the
+      submission-status row doesn't self-update (no SSE/polling, unlike
+      the activity feed) — a real gap, but real-time infrastructure work,
+      not UI/motion/accessibility polish; revisit alongside Phase 8 or
+      whenever submission UX gets its own slice. Also noted, lower
+      priority: sparse card grids read as empty at low item counts on wide
+      viewports, and difficulty labels have no visual coding beyond text —
+      both P3/opinion-level, not correctness bugs
+- [x] `docs/DESIGN.md` rewritten to v2: elevation, motion, z-index, type
+      scale, the new `LogoIcon`+`Wordmark` composition, the three layout
+      patterns (card grid / timeline / tabular), the gamification
+      components, and the accessibility conventions this sub-phase
+      established — all documented, not just shipped
 
 ---
 

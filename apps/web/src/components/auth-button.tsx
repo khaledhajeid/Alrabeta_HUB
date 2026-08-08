@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
@@ -29,8 +30,13 @@ export function AuthButton({ user }: { user: SessionUser }) {
   return (
     <div className="flex items-center gap-2 sm:gap-3">
       {user.image ? (
-        // eslint-disable-next-line @next/next/no-img-element -- external Forgejo avatar, not worth an image-optimization round trip
-        <img src={user.image} alt="" className="h-6 w-6 shrink-0 rounded-full" />
+        <Image
+          src={user.image}
+          alt={`${user.name}'s avatar`}
+          width={24}
+          height={24}
+          className="h-6 w-6 shrink-0 rounded-full"
+        />
       ) : (
         <div className="h-6 w-6 shrink-0 rounded-full bg-surface-2" aria-hidden />
       )}

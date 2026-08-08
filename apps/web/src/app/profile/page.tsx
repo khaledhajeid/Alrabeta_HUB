@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import Image from "next/image";
 import { eq } from "drizzle-orm";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
@@ -33,8 +34,13 @@ export default async function ProfilePage() {
 
       <div className="mt-6 flex items-center gap-4 rounded-lg bg-surface p-5 shadow-resting">
         {user.image ? (
-          // eslint-disable-next-line @next/next/no-img-element -- external Forgejo avatar
-          <img src={user.image} alt="" className="h-14 w-14 rounded-full" />
+          <Image
+            src={user.image}
+            alt={`${user.name}'s avatar`}
+            width={56}
+            height={56}
+            className="h-14 w-14 rounded-full"
+          />
         ) : (
           <div className="h-14 w-14 rounded-full bg-surface-2" aria-hidden />
         )}
