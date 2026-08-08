@@ -175,32 +175,46 @@ are in `docs/MASTER_PLAN.md` §2.5. Executed as lettered sub-phases in order
 potential before moving on" rule.
 
 ### 7.5.A — Motion & elevation foundations (tokens first, no visual change yet)
-- [ ] Elevation scale added to `globals.css`: a resting-card shadow and a
-      raised/hover shadow, both violet-tinted (ties elevation to the brand
-      accent rather than generic black shadows — see Vercel's shadow-as-
-      border research: layered shadows read as "built," not "floating")
-- [ ] Motion tokens: `--motion-fast` (~120ms), `--motion-base` (~180ms),
-      `--motion-slow` (~280ms, for stagger/reveal steps), one ease-out
-      curve (`cubic-bezier(0.22, 1, 0.36, 1)` — ease-out-quint, no bounce,
-      per this project's product register: motion conveys state, not
-      decoration, 150–250ms on most transitions)
-- [ ] Semantic z-index scale (dropdown → sticky → modal-backdrop → modal →
-      toast → tooltip), replacing the one hardcoded `z-20`
-- [ ] `prefers-reduced-motion` policy written into `globals.css` before any
-      animation lands — not bolted on after
+- [x] Elevation scale added to `globals.css`: `--shadow-resting`/
+      `--shadow-raised`, violet-tinted, theme-aware (separate dark/light
+      values, same pattern as the existing color tokens), mapped into
+      `@theme inline` as `shadow-resting`/`shadow-raised` Tailwind
+      utilities — not applied to any surface yet, that's 7.5.D
+- [x] Motion tokens: `--motion-fast` (120ms), `--motion-base` (180ms),
+      `--motion-slow` (280ms), `--ease-out-quint` (`cubic-bezier(0.22, 1,
+      0.36, 1)`, registered in `@theme` so `ease-out-quint` is a real
+      Tailwind utility) — validated against Tailwind v4's docs first:
+      `--ease-*` is a real theme namespace, `--duration-*` isn't (durations
+      use the `duration-(--var)` CSS-var syntax instead)
+- [x] Semantic z-index scale (`--z-dropdown` through `--z-tooltip`) added
+      and the one hardcoded `z-20` in `mobile-menu.tsx` replaced with
+      `z-(--z-dropdown)` — verified live, the dropdown still renders above
+      page content correctly
+- [x] `prefers-reduced-motion` global safety net written into `globals.css`
+      now, before 7.5.C adds anything for it to reduce
 
 ### 7.5.B — Identity fix: nav + logo
-- [ ] Nav height `h-14` (56px) → `h-16` (64px), matching the stated
-      Vercel/Linear reference set instead of running 12–30% shorter than it
-      for no density gain
-- [ ] `Logo` lockup rebuilt horizontal (icon left, wordmark baseline-
-      aligned to its right) instead of stacked into a 24px box — same SVG
-      paths already in hand, no new art needed from the product owner, just
-      a re-composition
-- [ ] Mobile nav shows icon + short wordmark instead of icon-only — brand
-      name currently disappears entirely below 640px
-- [ ] Logo touch target brought up to the project's own documented 44×44px
-      convention (currently 28×28px)
+- [x] Nav height `h-14` (56px) → `h-16` (64px)
+- [x] Logo rebuilt as two independently sized pieces — `LogoIcon`
+      (unchanged) + a new `Wordmark` component (the same wordmark paths,
+      re-cropped to their own tight viewBox) — composed via flexbox in
+      `nav.tsx` rather than as one fused multi-transform SVG, which turned
+      out to be the more robust way to keep both pieces legible across
+      breakpoints
+- [x] Mobile nav shows icon + wordmark (previously icon-only) — found and
+      fixed a real regression first: the initial size (matching desktop)
+      overflowed the 375px row by 22px once the auth button, theme toggle,
+      and menu trigger were all present. Measured with `scrollWidth` vs.
+      `innerWidth`, not eyeballed — reduced padding/gap and the wordmark's
+      mobile size until `scrollWidth === innerWidth` at 375px, confirmed
+      with a real screenshot that it's still legible at the smaller size
+- [x] Logo touch target: the link's hit area is now 44px tall (`py-2`
+      around the 28px icon) and well over 44px wide at every breakpoint —
+      verified via `getBoundingClientRect()`, not assumed
+- [x] Verified: `tsc --noEmit`, `lint`, `next build` all clean; Playwright
+      pass at 375/768/1280px, both themes, on home and quests; zero
+      horizontal overflow, zero console errors, mobile menu dropdown still
+      renders correctly above content with the new z-index token
 
 ### 7.5.C — Motion applied
 - [ ] Hover/focus micro-interactions beyond color: subtle transform/shadow
