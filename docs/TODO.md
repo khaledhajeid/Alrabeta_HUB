@@ -151,6 +151,129 @@ decisions that haven't been made yet.
 - [ ] Paths as a real browsing/filtering structure on `/quests`, not just
       a tag pill
 
+**Paused here.** Per the standing rule (no new phase until the current one
+peaks), the remaining four items above wait until Phase 7.5 is done — the
+product owner flagged the shipped Phase 6 re-skin as "gloomy, flat,
+lifeless" and asked for a full UI/UX pass before any more runner or content
+work. Resume this list once Phase 7.5's exit checklist is clear.
+
+---
+
+## Phase 7.5 — UI/UX Redesign (A-to-Z)
+
+*Inserted ahead of the rest of Phase 7 per explicit direction. Triggered by
+a `/impeccable critique` dual-agent audit (2026-08-08,
+`.impeccable/critique/2026-08-08T15-06-42Z__apps-web-home-nav-quests-quest-detail.md`,
+score **16/40 — Poor**) that confirmed the complaint with hard evidence: one
+`transition-colors` rule in the entire codebase and nothing else, one
+`shadow-lg` in the whole app, a 56px nav with an ~24px-tall logo whose
+wordmark is functionally illegible, and zero rendered trace anywhere of the
+badge/tier system that gave `--accent` its name. Full findings and the
+benchmark research (Vercel/Linear/Raycast/Supabase design-system specifics)
+are in `docs/MASTER_PLAN.md` §2.5. Executed as lettered sub-phases in order
+— each is a real gate, not a suggestion, per the project's standing "peak
+potential before moving on" rule.
+
+### 7.5.A — Motion & elevation foundations (tokens first, no visual change yet)
+- [ ] Elevation scale added to `globals.css`: a resting-card shadow and a
+      raised/hover shadow, both violet-tinted (ties elevation to the brand
+      accent rather than generic black shadows — see Vercel's shadow-as-
+      border research: layered shadows read as "built," not "floating")
+- [ ] Motion tokens: `--motion-fast` (~120ms), `--motion-base` (~180ms),
+      `--motion-slow` (~280ms, for stagger/reveal steps), one ease-out
+      curve (`cubic-bezier(0.22, 1, 0.36, 1)` — ease-out-quint, no bounce,
+      per this project's product register: motion conveys state, not
+      decoration, 150–250ms on most transitions)
+- [ ] Semantic z-index scale (dropdown → sticky → modal-backdrop → modal →
+      toast → tooltip), replacing the one hardcoded `z-20`
+- [ ] `prefers-reduced-motion` policy written into `globals.css` before any
+      animation lands — not bolted on after
+
+### 7.5.B — Identity fix: nav + logo
+- [ ] Nav height `h-14` (56px) → `h-16` (64px), matching the stated
+      Vercel/Linear reference set instead of running 12–30% shorter than it
+      for no density gain
+- [ ] `Logo` lockup rebuilt horizontal (icon left, wordmark baseline-
+      aligned to its right) instead of stacked into a 24px box — same SVG
+      paths already in hand, no new art needed from the product owner, just
+      a re-composition
+- [ ] Mobile nav shows icon + short wordmark instead of icon-only — brand
+      name currently disappears entirely below 640px
+- [ ] Logo touch target brought up to the project's own documented 44×44px
+      convention (currently 28×28px)
+
+### 7.5.C — Motion applied
+- [ ] Hover/focus micro-interactions beyond color: subtle transform/shadow
+      response on interactive rows, buttons, tag pills
+- [ ] Route/page transitions (View Transitions API or an equivalently thin
+      approach — no heavy client-side animation runtime unless a concrete
+      need shows up that CSS can't cover)
+- [ ] List entrances (activity feed, quest catalog, commit history) stagger
+      in on mount — one deliberate reveal per list, not a uniform reflex
+      applied everywhere
+- [ ] Submission-result state gets a real entrance (see 7.5.F — this is
+      where motion and the gamification-visibility fix meet)
+
+### 7.5.D — Depth applied
+- [ ] Replace bare `border` on cards/nav/homepage surfaces with the 7.5.A
+      elevation scale where it's actually a raised surface; keep borders
+      for genuinely tabular/dense content (commit list, markdown tables) —
+      not everything gets a shadow, that's a different flatness problem
+
+### 7.5.E — Information hierarchy & content differentiation
+- [ ] Real type scale beyond "h1 vs. everything else" — quest titles, point
+      values, tags, timestamps currently all sit in the same 12–14px band
+- [ ] Break the one-row-template-for-everything pattern: quest catalog
+      becomes browsable cards (not a bordered row list), activity feed gets
+      timeline treatment, repo directory differentiated from the commit
+      list (which stays dense/tabular — that one's correct as a list)
+
+### 7.5.F — Gamification made visible (UI only — no new schema/currency)
+- [ ] Submission result (`Passed`/`Failed`/`Needs review`) redesigned with
+      real visual weight: color + icon + the 7.5.C entrance motion, not a
+      14px text row indistinguishable from a timestamp
+- [ ] A minimal badge/tier display surfaced on profile + quest detail —
+      `--accent`'s own origin story (the Violet-tier badge signal) is
+      currently invisible in the shipped product. Two-currency/streaks/shop
+      stay exactly where they are, in Phase 8 — this is "show the badges
+      that already exist," not "build the economy"
+- [ ] Tone lock: quiet and confident, not game-arcade — a clean color/icon
+      state change plus one deliberate motion beat, matching the
+      Vercel/Linear/Raycast restraint this project has already committed
+      to, not a confetti burst. The "reward" comes from precision and
+      real weight, not decoration volume
+
+### 7.5.G — Accessibility & robustness (fixes the audit found directly)
+- [ ] `--ember` light-mode contrast bug: 3.39:1 on rendered quest code
+      blocks (needs 4.5:1) — either fix the color or correct DESIGN.md's
+      "reserved, not yet used" claim to match what's actually live
+      (`globals.css:229-233`)
+- [ ] Service-status dots get a text/aria-live alternative — currently
+      color-only and `aria-hidden`, a real WCAG 1.4.1 failure
+- [ ] Mobile menu gets a focus trap and an Escape handler — currently
+      neither exists
+- [ ] Tag-filter pill wall (10 unranked pills for a 4-quest catalog)
+      collapses to a search/combobox past ~5–6 tags
+- [ ] `loading.tsx` and `error.tsx` added under `app/` — currently absent
+      everywhere, meaning a blank flash on slow loads and Next's generic
+      unstyled crash screen on errors
+- [ ] Avatar `<img>` → `next/image` (`profile/page.tsx`, `auth-button.tsx`),
+      real `alt` text instead of `alt=""` on a meaningful image
+
+### 7.5.H — Verification
+- [ ] Full Playwright pass, 375/768/1280px, both themes, every touched
+      surface — this project's existing standard, not a new one
+- [ ] Contrast re-verified computationally (not eyeballed), same method as
+      Phase 6
+- [ ] Performance budget check: Lighthouse/Core Web Vitals before vs. after
+      — motion and elevation must not cost real frame time or bundle size;
+      CSS-first per 7.5.C, no animation library added unless a concrete gap
+      shows up that CSS genuinely can't cover
+- [ ] Re-run `/impeccable critique` on the same surfaces — confirm the
+      score actually moved off 16/40, not just "it looks different now"
+- [ ] `docs/DESIGN.md` updated to reflect the v2 token system (elevation,
+      motion, z-index, type scale) and logo lockup change
+
 ---
 
 ## Phase 8 — Gamification Expansion
