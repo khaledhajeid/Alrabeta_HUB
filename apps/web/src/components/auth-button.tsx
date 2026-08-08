@@ -18,7 +18,7 @@ export function AuthButton({ user }: { user: SessionUser }) {
         onClick={() =>
           authClient.signIn.oauth2({ providerId: "forgejo", callbackURL: "/" })
         }
-        className="flex min-h-11 items-center whitespace-nowrap rounded-md border border-line px-2.5 text-sm font-medium text-text transition-colors hover:bg-surface-2 sm:min-h-0 sm:px-3 sm:py-1.5"
+        className="flex min-h-11 items-center whitespace-nowrap rounded-md bg-accent-strong px-2.5 text-sm font-medium text-accent-ink transition-colors hover:bg-accent sm:min-h-0 sm:px-3 sm:py-1.5"
       >
         <span className="sm:hidden">Sign in</span>
         <span className="hidden sm:inline">Sign in with Forgejo</span>

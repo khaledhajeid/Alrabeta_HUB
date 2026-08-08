@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { auth } from "@/server/auth";
+import { Logo, LogoIcon } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { AuthButton } from "./auth-button";
 import { MobileMenu } from "./mobile-menu";
@@ -18,11 +19,9 @@ export async function Nav() {
   return (
     <header className="relative border-b border-line bg-surface">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
-        <Link
-          href="/"
-          className="shrink-0 font-mono text-sm font-bold tracking-tight text-text"
-        >
-          alrabeta<span className="text-signal">.</span>hub
+        <Link href="/" className="shrink-0 text-text" aria-label="Alrabeta Hub — home">
+          <LogoIcon className="h-7 w-7 sm:hidden" />
+          <Logo className="hidden h-6 w-auto sm:block" />
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-4">

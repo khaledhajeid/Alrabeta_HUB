@@ -6,14 +6,12 @@ type Theme = "light" | "dark";
 
 let listeners: Array<() => void> = [];
 
+// Dark is the strict default (see theme-script.tsx) — no OS-preference
+// fallback here either, so this agrees with what actually painted.
 function getSnapshot(): Theme {
-  const stored = document.documentElement.dataset.theme as Theme | undefined;
-  if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
 }
 
-// Matches this app's dark-first design; corrected to the real value the
-// instant useSyncExternalStore reconciles after hydration.
 function getServerSnapshot(): Theme {
   return "dark";
 }
