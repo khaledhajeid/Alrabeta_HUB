@@ -529,8 +529,9 @@ peak-potential rule.
 benchmark research in §2.5. Not a new feature phase — a motion/depth/
 hierarchy/gamification-visibility pass over what's already shipped, gated
 by a re-run `/impeccable critique` before it's considered done.*
-- [ ] 7.5.A Motion & elevation design tokens
-- [ ] 7.5.B Nav height + logo lockup rebuild
+- [x] 7.5.A Motion & elevation design tokens
+- [x] 7.5.B Nav height + logo lockup rebuild (found and fixed a real
+      mobile-overflow regression along the way — see `docs/TODO.md`)
 - [ ] 7.5.C Motion applied (hover/focus, route transitions, list entrances)
 - [ ] 7.5.D Elevation applied, replacing bare borders on raised surfaces
 - [ ] 7.5.E Real type scale + break the one-row-template-for-everything

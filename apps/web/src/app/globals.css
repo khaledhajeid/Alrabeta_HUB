@@ -27,6 +27,22 @@
   --signal-ink: #06110b;
   --ember: #fb923c;
   --danger: #f87171;
+  /* Elevation (Phase 7.5.A) — violet-tinted ambient shadow, not generic
+     black, so a raised surface reads as *this brand's* depth rather than
+     a default Material-style shadow. Layered like Vercel's shadow-as-
+     border research: a hairline ring (var(--line), already the border
+     color) plus a soft ambient lift — resting cards get the ring only,
+     raised/hover state adds the violet glow. Not applied to any surface
+     yet; that's Phase 7.5.D. Dark and light need separate values since
+     ambient shadow opacity reads very differently against a near-black
+     vs. near-white surface.
+     Alpha is intentionally low (Vercel's own don't: "don't use heavy
+     shadows > 0.1 opacity" — the accent glow goes higher since it's the
+     *signature* element, not ambient depth, but stays whisper-level
+     otherwise). */
+  --shadow-resting: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--line);
+  --shadow-raised: 0 12px 28px -12px rgba(167, 139, 250, 0.35), 0 2px 8px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--line);
 }
 
 :root[data-theme="light"] {
@@ -43,6 +59,30 @@
   --signal-ink: #ffffff;
   --ember: #ea580c;
   --danger: #dc2626;
+  --shadow-resting: 0 1px 2px rgba(23, 21, 29, 0.06), 0 0 0 1px var(--line);
+  --shadow-raised: 0 12px 28px -12px rgba(124, 58, 237, 0.18), 0 2px 8px rgba(23, 21, 29, 0.08),
+    0 0 0 1px var(--line);
+}
+
+/* Motion (Phase 7.5.A) — three durations, one curve. Not theme-dependent.
+   Product register: 150–250ms on most transitions, motion conveys state
+   not decoration (see docs/PRODUCT.md's design principles). Ease-out-
+   quint, no bounce/elastic — matches the Vercel/Linear/Raycast restraint
+   this project already committed to in Phase 6. Nothing consumes these
+   yet; that's Phase 7.5.C. */
+:root {
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 280ms;
+  /* Semantic z-index scale (Phase 7.5.A) — replaces the single hardcoded
+     z-20 that used to be this app's entire stacking story. Ordered low to
+     high; each layer is a real category, not an arbitrary number. */
+  --z-dropdown: 20;
+  --z-sticky: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-tooltip: 70;
 }
 
 @theme inline {
@@ -61,10 +101,32 @@
   --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-mono);
+  --shadow-resting: var(--shadow-resting);
+  --shadow-raised: var(--shadow-raised);
+  /* ease-out-quint — the one curve this project uses for anything that
+     isn't an instant state flip. cubic-bezier per docs/PRODUCT.md's
+     motion principle (ease-out, no bounce). */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
   border-color: var(--line);
+}
+
+/* Reduced motion is not optional, and is written in before any animation
+   exists to consume it — not bolted on after the fact. Covers whatever
+   Phase 7.5.C adds automatically: every transition/animation collapses to
+   near-instant rather than being disabled outright (an instant state
+   change still communicates the state; no state change at all doesn't). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 html {

@@ -27,9 +27,7 @@ export function MobileMenu({ links }: { links: Array<{ href: string; label: stri
       </button>
 
       {open && (
-        // z-20: above ordinary page content, nothing else in this app
-        // competes for stacking yet (no modals/toasts/tooltips).
-        <div className="absolute inset-x-0 top-full z-20 border-b border-line bg-surface px-4 py-3 shadow-lg">
+        <div className="absolute inset-x-0 top-full z-(--z-dropdown) border-b border-line bg-surface px-4 py-3 shadow-lg">
           <nav className="flex flex-col">
             {links.map((link) => (
               <Link
