@@ -33,14 +33,28 @@ decisions that haven't been made yet.
       LayoutProps/PageProps come from generated `.next/types`, which a
       fresh CI checkout doesn't have yet, unlike a local dir that's
       already run `next dev`/`build` at least once)
-- [ ] Enable branch protection on `main` (require the CI check, require
-      PR review, disallow direct push/force-push)
-- [ ] Commitlint + commit-msg git hook enforcing Conventional Commits
-- [ ] GitHub issue templates (bug/feature), PR template
-- [ ] Labels: Path (`git`, `bash`, `docker`, `systems`, ...), phase, type
-      (bug/feature/chore), priority
+- [x] Enable branch protection on `main` — PR required, "build" CI check
+      required, no direct push/force-push/deletion, applies to admins too.
+      0 required approvals (deliberate: no second collaborator exists yet
+      — requiring an approval count would deadlock every merge, since
+      GitHub never allows self-approval. Revisit once there's a second
+      person with write access.)
+- [x] Commitlint + commit-msg git hook enforcing Conventional Commits —
+      root-level `package.json`/`commitlint.config.js` (the git repo root
+      isn't `apps/web`, so hook tooling lives independently of any one
+      app's dependencies). Verified live: a non-conventional message was
+      actually rejected, a conventional one actually passed. Also
+      enforced in CI (`commitlint` job, PR-only, lints the full base..head
+      range) since a local hook alone doesn't stop `--no-verify`.
+- [x] GitHub issue templates (bug/feature — structured YAML forms), PR
+      template
+- [x] Labels: Path (`path: git/bash/docker/systems/backend-api/cicd`),
+      phase (`phase-6`…`phase-11`), type (`chore` added; `bug`/
+      `enhancement` already existed as GitHub defaults, reused rather than
+      duplicated), priority (`priority: high/medium/low`) — 21 total,
+      verified via `gh label list`
 - [ ] GitHub Projects board, milestones mapped to Phases 6–11
-- [ ] Lightweight `CODEOWNERS`
+- [x] Lightweight `CODEOWNERS`
 
 ### Visual identity — decisions (locked, see MASTER_PLAN §2)
 - [x] Register: Vercel/Linear/Raycast, premium minimalist

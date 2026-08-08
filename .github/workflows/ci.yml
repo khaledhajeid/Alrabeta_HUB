@@ -81,3 +81,24 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  commitlint:
+    # PR-only: needs a base/head range to lint, and a local commit-msg hook
+    # already covers the push-to-main case for anyone who didn't bypass it.
+    # This exists specifically because --no-verify (or any tool that skips
+    # git hooks) makes the local hook alone not actually enforce anything.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
