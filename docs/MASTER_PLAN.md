@@ -859,26 +859,44 @@ application of that research than forcing interleaving into one flat list.
       WCAG contrast across its own gradient, undifferentiated track cards,
       and `/quests` silently duplicating `/paths`' content with no stated
       relationship. Score: 30/40 pre-fix to roughly 36/40 post-fix
-- [ ] `/impeccable shape` for the Home dashboard: replaces the raw Forgejo
-      activity-log homepage with progress across active paths/tracks,
-      points/rank, a continue-where-you-left-off card, and Daily/
-      Standalone quests; activity feed demotes to a secondary module or
-      its own `/activity` route, not the entire homepage
+- [ ] `/impeccable shape` for the Home dashboard: **two real states, not
+      one** (decision 15): signed-in (progress across active
+      paths/tracks, points/rank, a continue-where-you-left-off card, and
+      Daily/Standalone quests; activity feed demotes to a secondary
+      module or its own `/activity` route) and signed-out (what this
+      platform is, who it's for, sign-in CTA, per `docs/PRODUCT.md`'s own
+      "should read as premium and self-explanatory to a stranger"
+      currently has no page backing it; a signed-out visitor lands on the
+      same raw internal activity feed a signed-in user does today)
 - [ ] Nav/logo pass: the icon mark is illegible at 28px nav scale (dense
       internal detail that only resolves zoomed in, unlike Linear's/
       Vercel's single-geometric-move marks); nav shell itself is flat
       with a hard border, no blur-on-scroll or elevation, undercutting
       the Vercel/Linear/Raycast register the rest of the system already
       commits to
-- [ ] `craft` the Home dashboard and nav/logo pass once shaped
-- [ ] Exit gate for the Home dashboard and nav/logo pass: same dual-agent
-      `/impeccable critique` methodology, not a changelog taken on faith
+- [ ] Custom `not-found.tsx` (decision 15): every `notFound()` call today
+      (a bad quest/track slug) falls through to Next's generic default
+      404, a jarring drop out of the register every other screen commits
+      to. Small and cheap enough to fold in here rather than wait for
+      Phase 12's broader error/empty-state audit
+- [ ] `craft` the Home dashboard (both states), nav/logo pass, and the
+      custom 404 once shaped
+- [ ] Exit gate for the Home dashboard, nav/logo pass, and 404: same
+      dual-agent `/impeccable critique` methodology, not a changelog
+      taken on faith
 
 ### Phase 9 — Gamification Expansion *(was Phase 8)*
 - [ ] Two-currency system (points/rank, spendable shop currency)
 - [ ] Streaks, computed off submission history
 - [ ] Shop v1 (cosmetic items + Discord role integration)
 - [ ] Post-solve peer solution visibility
+- [ ] Leaderboard route (decision 15): the two-currency system above
+      builds points/rank but has no page that surfaces rank against
+      other people; without one, "rank" is only ever visible on your
+      own profile, which makes the concept inert. Standard on every
+      comparable platform (LeetCode, HackerRank, Codecademy); dead
+      without this phase's own currency work underneath it, so it belongs
+      here, not earlier
 
 ### Phase 10 — Admin Panel *(was Phase 9)*
 - [ ] User list + role management
@@ -1136,3 +1154,32 @@ Formerly "open questions" — resolved:
     and `/paths`' single-path sparseness (an honest, temporary consequence
     of current content volume, not a page-design flaw). Home dashboard
     and the nav/logo pass remain open in Phase 8.5.
+15. **Full page-inventory audit** (2026-08-09): a Principal-UX-Architect
+    pass over the entire route structure, prompted by a direct question
+    about the Profile page and what else the architecture is missing
+    relative to comparable platforms (Codecademy, Pluralsight, LeetCode,
+    HackerRank). Findings:
+    - Profile itself needs no new phase work, its real gaps (points/rank,
+      streaks, submission history, public profiles) are already correctly
+      scoped into Phase 9 and Phase 12, word for word.
+    - `/` has no distinct signed-out state: a stranger lands on the same
+      raw internal activity feed a signed-in user does, contradicting
+      `docs/PRODUCT.md`'s own "should read as premium and
+      self-explanatory to a stranger." Folded into Phase 8.5's
+      already-open Home dashboard item as a second required state, not
+      treated as separate new work.
+    - No custom 404 (`notFound()` calls fall through to Next's generic
+      default page). Small and cheap enough to fold into Phase 8.5's
+      nav/logo pass rather than wait for Phase 12's broader audit.
+    - No leaderboard route: Phase 9 builds points/rank but has no page
+      that makes "rank" mean anything against other people. Added
+      explicitly to Phase 9's checklist, it's inert without that phase's
+      own currency system underneath it, so it doesn't belong earlier.
+    - Explicitly recommended against building yet: an in-app notification
+      center (Discord already serves a ~14-person circle already on
+      Discord, matches §0.5's standing "don't pull forward public-facing
+      complexity" principle) and a dedicated onboarding flow (premature
+      for an invite-only circle that mostly knows each other; the Home
+      dashboard's continue-where-you-left-off card is enough for now).
+    No phase renumbering, no new phase inserted, existing sequencing
+    (8.5 now, 9 next) confirmed correct.

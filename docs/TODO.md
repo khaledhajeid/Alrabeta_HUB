@@ -626,16 +626,23 @@ informal tags).*
         "Part of [Track]" per quest)
       Score: 30/40 pre-fix → ~36/40 post-fix. 2 P3s deliberately deferred
       (lateral track-to-track nav, single-path sparseness)
-- [ ] `/impeccable shape` for the Home dashboard: progress across active
-      paths/tracks, points/rank, continue-where-you-left-off, Daily/
-      Standalone quests; activity feed demotes to a secondary module or
-      its own `/activity` route
+- [ ] `/impeccable shape` for the Home dashboard: two real states (decision
+      15), not one. Signed-in: progress across active paths/tracks,
+      points/rank, continue-where-you-left-off, Daily/Standalone quests;
+      activity feed demotes to a secondary module or its own `/activity`
+      route. Signed-out: what this platform is, who it's for, sign-in
+      CTA, currently a stranger lands on the same raw internal activity
+      feed a signed-in user does
 - [ ] Nav/logo pass: icon mark illegible at 28px nav scale, nav shell
       lacks elevation/blur-on-scroll relative to the Vercel/Linear/
       Raycast register the rest of the system commits to
-- [ ] `craft` the Home dashboard and nav/logo pass once shaped
-- [ ] Exit gate for the Home dashboard and nav/logo pass: same dual-agent
-      `/impeccable critique` methodology
+- [ ] Custom `not-found.tsx` (decision 15): `notFound()` calls today fall
+      through to Next's generic default 404, breaking the register every
+      other screen commits to; cheap enough to fold in here
+- [ ] `craft` the Home dashboard (both states), nav/logo pass, and the
+      custom 404 once shaped
+- [ ] Exit gate for the Home dashboard, nav/logo pass, and 404: same
+      dual-agent `/impeccable critique` methodology
 
 ---
 
@@ -650,6 +657,11 @@ informal tags).*
       webhook integration)
 - [ ] Post-solve peer solution visibility (once passed, see others'
       accepted solutions for that quest)
+- [ ] Leaderboard route (decision 15): the two-currency system above has
+      no page that surfaces rank against other people; without one,
+      "rank" is only ever visible on your own profile. Standard on every
+      comparable platform (LeetCode, HackerRank, Codecademy); depends on
+      this phase's own currency work, so it belongs here
 
 ---
 
