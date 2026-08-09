@@ -49,11 +49,13 @@ decisions that haven't been made yet.
 - [x] GitHub issue templates (bug/feature — structured YAML forms), PR
       template
 - [x] Labels: Path (`path: git/bash/docker/systems/backend-api/cicd`),
-      phase (`phase-6`…`phase-11`), type (`chore` added; `bug`/
-      `enhancement` already existed as GitHub defaults, reused rather than
-      duplicated), priority (`priority: high/medium/low`) — 21 total,
-      verified via `gh label list`
-- [ ] GitHub Projects board, milestones mapped to Phases 6–11
+      phase (`phase-6`…`phase-13`, descriptions updated 2026-08-09 to match
+      the renumbering in `docs/MASTER_PLAN.md` decision 10, `phase-12`/
+      `phase-13` newly created), type (`chore` added; `bug`/`enhancement`
+      already existed as GitHub defaults, reused rather than duplicated),
+      priority (`priority: high/medium/low`) — 23 total, verified via
+      `gh label list`
+- [ ] GitHub Projects board, milestones mapped to Phases 6–13
 - [x] Lightweight `CODEOWNERS`
 
 ### Visual identity — decisions (locked, see MASTER_PLAN §2)
@@ -250,8 +252,21 @@ decisions that haven't been made yet.
       one message-format failure specifically) against its exact seeded
       `runnerSpec`, pulled from the real database, not a hand-copied
       approximation of it.
-- [ ] Paths as a real browsing/filtering structure on `/quests`, not just
-      a tag pill
+- [ ] Paths relational schema (`docs/MASTER_PLAN.md` §3.5): new `paths`
+      table (slug/title/summary/status/authorId), new `path_quests` join
+      table (`pathId`, `questId`, `orderIndex`, unique on both
+      `(pathId, questId)` and `(pathId, orderIndex)`, indexed on
+      `(pathId, orderIndex)`), new `quests.style` enum
+      (`"educational" | "pure"`). Real normalized structure per explicit
+      direction, not a lightweight `pathSlug` shortcut, even at current
+      content volume — see §3.5 for the full reasoning
+- [ ] Retrofit all 12 existing quests with a real `style` tag (no implicit
+      default left unchosen), and organize them into the platform's first
+      real Mastery Path (Backend Engineering Foundations), applying the
+      fade-across-the-sequence principle (§1.5) to real content
+- [ ] Functional Paths browsing/filtering UI on `/quests`, replacing the
+      tag-pill-only filter — "works and is organized correctly," not the
+      deeper presentation/progression design pass, that's Phase 8
 
 **Resumed.** Phase 7.5 is done (16/40 → 26/40, re-audit-verified, see
 below) — the remaining items above are back in play, next up whenever
@@ -283,7 +298,8 @@ Lighthouse on a production build: 95/100 performance, 100/100
 accessibility, 0 CLS. One real gap deliberately deferred rather than
 scope-crept into this phase: the submission-status row doesn't self-update
 (no SSE/polling) — real-time infrastructure work, not UI polish; revisit
-alongside Phase 8 or whenever submission UX gets its own slice.
+alongside Phase 9 (Gamification) or whenever submission UX gets its own
+slice.
 
 ### 7.5.A — Motion & elevation foundations (tokens first, no visual change yet)
 - [x] Elevation scale added to `globals.css`: `--shadow-resting`/
@@ -405,7 +421,7 @@ alongside Phase 8 or whenever submission UX gets its own slice.
       `lib/badge-info.ts` holds display metadata, deliberately kept
       separate from `server/badges.ts`'s grading/eligibility logic so the
       UI layer doesn't import server-only types. Two-currency/streaks/shop
-      untouched, exactly where they already were — Phase 8
+      untouched, exactly where they already were — Phase 9 (Gamification)
 - [x] Tone lock held: a spark icon and a checkmark, not a trophy or a
       confetti burst — verified against the actual rendered result, not
       just intended
@@ -475,10 +491,11 @@ alongside Phase 8 or whenever submission UX gets its own slice.
       **Deliberately not fixed, logged as a follow-up instead**: the
       submission-status row doesn't self-update (no SSE/polling, unlike
       the activity feed) — a real gap, but real-time infrastructure work,
-      not UI/motion/accessibility polish; revisit alongside Phase 8 or
-      whenever submission UX gets its own slice. Also noted, lower
-      priority: sparse card grids read as empty at low item counts on wide
-      viewports, and difficulty labels have no visual coding beyond text —
+      not UI/motion/accessibility polish; revisit alongside Phase 9
+      (Gamification) or whenever submission UX gets its own slice. Also
+      noted, lower priority: sparse card grids read as empty at low item
+      counts on wide viewports, and difficulty labels have no visual
+      coding beyond text —
       both P3/opinion-level, not correctness bugs
 - [x] `docs/DESIGN.md` rewritten to v2: elevation, motion, z-index, type
       scale, the new `LogoIcon`+`Wordmark` composition, the three layout
@@ -488,7 +505,26 @@ alongside Phase 8 or whenever submission UX gets its own slice.
 
 ---
 
-## Phase 8 — Gamification Expansion
+## Phase 8 — Learning UI/UX
+
+*New, inserted 2026-08-09. Needs Phase 7's retrofitted Mastery Path to
+design against, not placeholder content. Same relationship to Phase 7
+that 7.5 had to Phase 6 — see `docs/MASTER_PLAN.md`'s Phase 8 entry for
+the full rationale.*
+
+- [ ] Research pass (context7/firecrawl): visual patterns for
+      learning-curve/progression visualization, path-completion state,
+      hint presentation, on comparable platforms
+- [ ] Educational vs. Pure visual distinction: how a primer reads and is
+      visually distinguished from the challenge, how Pure-quest
+      keyword-hints are presented without becoming a disguised tutorial
+- [ ] Mastery Path progression UI: ordered sequence, current position,
+      fade-in-difficulty made visible, not just implied by list order
+- [ ] Exit gate: dual-agent audit, same methodology 7.5 used to close
+
+---
+
+## Phase 9 — Gamification Expansion *(was Phase 8)*
 
 - [ ] Design the two-currency model (permanent points/rank vs. spendable
       shop currency) and the schema it needs
@@ -502,19 +538,39 @@ alongside Phase 8 or whenever submission UX gets its own slice.
 
 ---
 
-## Phase 9 — Admin Panel
+## Phase 10 — Admin Panel *(was Phase 9)*
 
 - [ ] `role` field on `user` (admin/member), auth guard for admin routes
 - [ ] User list + role management UI
 - [ ] Quest CRUD UI (retires `scripts/seed-quests.ts` as the only way to
       publish a quest)
+- [ ] **Path CRUD UI** (author/order/publish a `paths` row and its
+      `path_quests` membership — Paths are a first-class entity per §3.5,
+      not a tag)
 - [ ] Submissions/grading monitor — check whether an existing OSS queue
       dashboard (e.g. Bull Board) covers this before building custom
 - [ ] Audit log (append-only table + admin actions wired to log to it)
 
 ---
 
-## Phase 10 — Platform Hardening & Missing-Feature Pass
+## Phase 11 — Market-Driven Content
+
+*New, inserted 2026-08-09. Sequenced after Admin (10, real CRUD tooling
+for content at this scale) and after Learning UI/UX (8, content authored
+directly against the final presentation model). Full rationale in
+`docs/MASTER_PLAN.md`'s Phase 11 entry.*
+
+- [ ] Research pass: `firecrawl`/`context7` against current official
+      documentation and named industry-standard sources to identify
+      quest-shaped, high-demand skills — same source-quality bar as §1's
+      original market research, not blog-post summaries
+- [ ] Author quests through Phase 10's Path/Quest CRUD, not a seed script
+- [ ] Recalibrate existing difficulty/style labels against real
+      `duration_ms`/pass-fail data once volume justifies it
+
+---
+
+## Phase 12 — Platform Hardening & Missing-Feature Pass *(was Phase 10)*
 
 *Last gate before beta invite — nothing here optional.*
 
@@ -532,7 +588,7 @@ alongside Phase 8 or whenever submission UX gets its own slice.
 
 ---
 
-## Phase 11 — AI Qualitative Review
+## Phase 13 — AI Qualitative Review *(was Phase 11)*
 
 *Deliberately last — separate slice on top of the deterministic grading
 engine, kept out of every phase before it.*

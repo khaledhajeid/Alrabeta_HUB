@@ -20,6 +20,17 @@ now Phase 7, and so on through old Phase 12 AI Review, now Phase 11).
 Global numbering stays continuous with the existing Phase 0–5 history
 already referenced in commits/PRs/README.
 
+**Second renumbering (2026-08-09)**: two new phases inserted once the
+Educational/Pure + Mastery Path/Standalone content methodology (§1.5) and
+the Market-Driven Content mandate were formally adopted — see decision 10.
+A dedicated Learning UI/UX phase (new Phase 8) and a Market-Driven Content
+phase (new Phase 11) pushed every phase from the old Phase 8 onward down
+by two. Old Phase 8 Gamification is now Phase 9, old Phase 9 Admin is now
+Phase 10, old Phase 10 Hardening is now Phase 12, old Phase 11 AI
+Qualitative Review is now Phase 13. Same rule as the first renumbering:
+global numbering stays continuous, nothing about the work itself changed,
+only where it sits in sequence.
+
 ---
 
 ## 0. Critique of the pivot, first
@@ -169,6 +180,76 @@ right, not statistically precise.
 
 ---
 
+## 1.5. Learning methodology: style and structure
+
+Decided 2026-08-09, grounded in cognitive-load and instructional-design
+research (cited below), not platform-copying. Two independent axes, not a
+single four-way taxonomy — a quest's `style` and its `structure` are
+orthogonal, so an easy Pure quest and a hard Educational quest both make
+sense, and neither implies the other.
+
+**Axis 1, style, how much is explained upfront:**
+- **Educational**: a short primer, a few sentences, at most one small
+  worked-example snippet, never a full article, immediately followed by
+  the challenge. Kept deliberately brief: the testing/generation effect
+  research shows retrieval produces roughly 80% recall after a week versus
+  36% for passive re-study, so the challenge itself, not the explanation,
+  is where retention actually comes from. A long primer works against the
+  platform's own mechanism, not for it.
+- **Pure**: the full, unambiguous problem statement (never an ambiguous
+  one, "pure" means no taught concept, not a vague prompt, the same
+  standard Advent of Code holds itself to) plus a short list of keywords
+  or concepts to research externally. No tutorial, no doc links, no
+  step-by-step. Modeled on Exercism's philosophy of skipping upfront
+  teaching in favor of feedback after an attempt, adapted for a solo/async
+  context: this platform doesn't have live mentors, so the automated
+  runner verdict (a real pass/fail plus specifics, not a vague grade) is
+  what substitutes for a mentor's feedback loop.
+
+**Axis 2, structure, where a quest lives:**
+- **Mastery Path**: an ordered, curated sequence in one domain, beginner
+  to expert. Style fades across the sequence: early quests in a path skew
+  Educational, later quests in the same path skew Pure, directly mirroring
+  the faded-worked-examples research (gradually stripping scaffolding
+  across a sequence measurably outperforms both static worked examples and
+  pure problem-solving from the start). Difficulty climbs the same way.
+- **Standalone**: bite-sized, no prerequisites, sized for a single
+  session with a bit of targeted research. Not gated to a path. A future
+  daily-rotation/streak mechanic could hang off this bucket, but that's
+  explicitly Phase 9 (Gamification) scope, not a data-model requirement
+  now — see decision 10.
+
+**Two calibration principles from the research, not just preference:**
+- **Don't hard-gate paths yet.** Bjork's "desirable difficulties"
+  framework is explicit that a difficulty only builds skill if the learner
+  is actually capable of executing it and gets close, specific, timely
+  feedback, otherwise it's just frustration, the same claim Vygotsky's
+  zone of proximal development makes: a task has to sit between "can
+  already do alone" and "can't do even with help." A hard prerequisite-gate
+  wall is real engineering cost this platform's current content volume
+  doesn't justify yet. Recommended ordering plus a visual "next up" cue
+  gets the calibration benefit without the graph.
+- **Treat difficulty and style labels as estimates, not facts.** Codewars
+  ties its kata difficulty to a rank system explicitly designed so "the
+  next challenge stretches but never crushes," while documenting outright
+  that the ranking itself is imperfect and community-corrected over time.
+  This platform doesn't have community volume yet, but every submission
+  already logs `duration_ms` and pass/fail in `judgeOutput` — real
+  completion data sitting unused. Recalibrate labels against it once
+  there's enough volume to mean something, the same "verify empirically"
+  discipline already applied to every runner in this project.
+
+**Sources**: [Effects of Worked Examples with Explanation Types and
+Learner Motivation (ACM TOCE)](https://dl.acm.org/doi/full/10.1145/3732791) ·
+[The Mentoring Mindset, Exercism Docs](https://exercism.org/docs/mentoring/mindset) ·
+[About, Advent of Code](https://adventofcode.com/about) ·
+[Desirable Difficulties: Bjork's 5 Principles](https://www.structural-learning.com/post/desirable-difficulties) ·
+[A Guide to Vygotsky's Zone of Proximal Development and Scaffolding](https://elearningindustry.com/guide-to-vygotskys-zone-of-proximal-development-and-scaffolding) ·
+[Ranks, The Codewars Docs](https://docs.codewars.com/gamification/ranks/) ·
+[Retrieval mode distinguishes the testing effect from the generation effect](https://www.sciencedirect.com/science/article/abs/pii/S0749596X09001156)
+
+---
+
 ## 2. Visual identity & design system
 
 **Decided.** The "coding platform defaults to terminal-hacker green-on-black"
@@ -291,8 +372,8 @@ rather than working from vibes:
 
 This phase changes **how the existing product looks and moves**, not what
 it does. Two-currency points/shop economy, streaks, and peer-solution
-visibility stay exactly where they already are — Phase 8. The only
-gamification work pulled into this phase is making the badge/tier system
+visibility stay exactly where they already are — Phase 9 (Gamification).
+The only gamification work pulled into this phase is making the badge/tier system
 that already exists conceptually (and already named the brand accent)
 actually render somewhere — a visibility fix, not new mechanics.
 
@@ -338,8 +419,8 @@ submission-status row doesn't self-update — no SSE/polling on the
 quest-detail submissions list, unlike the activity feed. This is real
 product work (extending real-time infrastructure to a second surface), not
 UI/motion/accessibility polish, and doesn't belong in a phase whose job was
-the latter. Revisit alongside Phase 8 or whenever submission UX gets its
-own slice. Two more items — sparse-data grids at low item counts, and
+the latter. Revisit alongside Phase 9 (Gamification) or whenever
+submission UX gets its own slice. Two more items — sparse-data grids at low item counts, and
 difficulty labels with no visual coding — are P3/opinion-level, noted for
 a future pass, not blocking.
 
@@ -372,6 +453,64 @@ strategies keep the hardened sandbox model already validated in Phase 5
 This is real, sized work — a new grading architecture, not an extension of
 the existing one. It's its own phase (Phase 7), not a task inside another
 phase.
+
+---
+
+## 3.5. Paths data model
+
+Decided 2026-08-09, per explicit direction: build this as a real
+normalized relational structure now, not a lightweight `pathSlug` column
+shortcut, even though it won't be populated with more than a handful of
+paths at first. The reasoning holds regardless of current content volume:
+path membership is a relationship with its own attribute (position in the
+sequence), which is exactly the case a join table exists for, not a
+premature abstraction. Not implemented yet, this section documents the
+design; the migration itself is Phase 7's next concrete slice (§9).
+
+```
+paths                          path_quests                    quests
+----------------------------   -----------------------------  --------------------
+id            uuid PK          id           uuid PK            id            uuid PK
+slug          text UNIQUE      path_id      uuid FK -> paths   ...(existing columns)
+title         text             quest_id     uuid FK -> quests  style  "educational"|"pure"
+summary       text             order_index  int
+status        draft|published  created_at   timestamptz
+author_id     text FK -> user
+created_at    timestamptz
+updated_at    timestamptz
+```
+
+- **`paths` is a first-class entity**, not a tag or an enum on `quests` —
+  it needs its own `slug`/`title`/`summary`/`status` for the same reason
+  `quests` does: an admin needs to author, draft, and publish a path
+  independent of any single quest inside it (Phase 10's Admin Panel gains
+  Path CRUD alongside Quest CRUD accordingly, see §9).
+- **`path_quests` is a proper join table with an `order_index` column**,
+  not an array of quest IDs on `paths` or a `pathId` column directly on
+  `quests`. A quest belonging to exactly one path is the common case today,
+  but nothing about the schema assumes that, a foundational quest reused
+  as the intro to two different paths is a real normalized many-to-many
+  relationship, not a hack, and costs nothing extra to support now versus
+  retrofitting later. `unique(path_id, quest_id)` stops a quest being
+  double-added to the same path; `unique(path_id, order_index)` stops two
+  quests claiming the same slot; the composite index on
+  `(path_id, order_index)` is what makes "fetch this path's quests in
+  order" a single indexed scan, not a sort at query time.
+- **Standalone is the absence of a `path_quests` row**, not a boolean flag
+  on `quests`. Storing "is this standalone" as its own column would be
+  redundant, derivable state, exactly the kind of denormalization that
+  drifts out of sync with reality over time.
+- **`quests.style` is a new enum column** (`"educational" | "pure"`),
+  independent of `path_quests` and independent of the existing
+  `difficulty` enum, matching §1.5's orthogonal-axes decision. Existing
+  quests default to a real value assigned during Phase 7's retrofit pass
+  (see §9), not left to an implicit schema default that nobody actually
+  chose.
+- **Deliberately not built yet**: path-level prerequisites (path A gates
+  path B). Worth a `path_prerequisites` join table in the same shape as
+  `path_quests` if it's ever needed, but nothing in the current content
+  volume or the roadmap ahead justifies it now, matching §1.5's
+  don't-hard-gate-yet calibration principle applied one level up.
 
 ---
 
@@ -572,13 +711,25 @@ progress — see `docs/TODO.md` for the granular breakdown.*
       `rev-parse --verify` accepting the all-zero SHA as "verified" —
       see `infra/sandbox-git-assert/README.md`). Seeded a real quest
       (`three-clean-commits`, Git track)
-- [ ] Backend Engineering Foundations content: two runner-backed quests
-      exist (Bash, Git); needs real breadth across all four tracks before
-      this is a real launch surface, not proof points
-- [ ] Paths as a real browsing structure on `/quests`, not just a tag
+- [x] Backend Engineering Foundations content: every Foundations track now
+      has 3 quests, matching parity, not proof points
+- [ ] Paths relational data model (§3.5): `paths` + `path_quests` join
+      table with a real `order_index`, plus a new `quests.style` enum
+      (`educational`/`pure`). Built as a real normalized structure per
+      explicit direction, not a lightweight shortcut, even at current
+      content volume
+- [ ] Retrofit existing quests with real `style` tags and organize them
+      into the platform's first actual Mastery Path (Backend Engineering
+      Foundations), applying §1.5's fade-across-the-sequence principle to
+      real content for the first time
+- [ ] Functional Paths browsing/filtering UI on `/quests`, replacing the
+      tag-pill-only filter. Closes this phase at "works and is organized
+      correctly," the same bar Phase 6 shipped at — the deeper research-led
+      presentation pass for Educational/Pure and progression visualization
+      is its own phase (8), same relationship Phase 7.5 had to Phase 6
 
 **Resumed** — Phase 7.5 cleared its exit checklist (16/40 → 26/40,
-re-audit-verified). The remaining two items above are back in play.
+re-audit-verified). The remaining items above are back in play.
 
 ### Phase 7.5 — UI/UX Redesign, A-to-Z ✅ done
 *Inserted ahead of the rest of Phase 7. Full rationale, audit results, and
@@ -601,7 +752,7 @@ by a re-run `/impeccable critique` before it's considered done. Closed out
 - [x] 7.5.F Gamification made visible: `SubmissionStatus` + `BadgePill`
       components, badges surfaced on profile and quest detail (incl. a
       pre-solve "earn this" hint), contrast verified computationally —
-      UI only, no new schema/currency, Phase 8 untouched
+      UI only, no new schema/currency, Phase 9 (Gamification) untouched
 - [x] 7.5.G Accessibility/robustness: `--ember` contrast fixed, status-dot
       aria alternative, mobile-menu focus trap + Escape (keyboard-tested,
       not just coded), tag-select past 6 tags (verified against real
@@ -612,20 +763,67 @@ by a re-run `/impeccable critique` before it's considered done. Closed out
       (16/40 → 26/40, independently verified live), `DESIGN.md` rewritten
       to v2
 
-### Phase 8 — Gamification Expansion
+### Phase 8 — Learning UI/UX
+*New, inserted 2026-08-09 (decision 10). Same relationship to Phase 7 that
+7.5 had to Phase 6: Phase 7 closes with a functionally correct Paths UI,
+this phase is the deeper, research-led craft pass on top of it, gated by
+real research (not vibes) same as 7.5's benchmark research was, and
+plausibly by an `/impeccable critique`-style audit as the exit gate, same
+methodology as 7.5 used to close. Needs at least one real, styled,
+ordered Mastery Path to design against (Phase 7's retrofit work), not
+placeholder content — the same "don't build UI for an empty catalog"
+principle already applied once this project (decision 9).*
+- [ ] Research: visual patterns for learning-curve/progression
+      visualization, path-completion state, and hint presentation on
+      comparable platforms, before designing anything (context7/firecrawl,
+      same tooling 7.5's benchmark research used)
+- [ ] Design and ship the Educational vs. Pure visual distinction (how a
+      primer reads and is visually distinguished from the challenge itself,
+      how a Pure quest's keyword-hints are presented without becoming a
+      disguised tutorial)
+- [ ] Design and ship Mastery Path progression UI (ordered sequence,
+      current position, fade-in-difficulty made visible, not just implied
+      by list order)
+- [ ] Exit gate: same dual-agent audit methodology 7.5 used, not a
+      changelog taken on faith
+
+### Phase 9 — Gamification Expansion *(was Phase 8)*
 - [ ] Two-currency system (points/rank, spendable shop currency)
 - [ ] Streaks, computed off submission history
 - [ ] Shop v1 (cosmetic items + Discord role integration)
 - [ ] Post-solve peer solution visibility
 
-### Phase 9 — Admin Panel
+### Phase 10 — Admin Panel *(was Phase 9)*
 - [ ] User list + role management
 - [ ] Quest CRUD (retiring `scripts/seed-quests.ts` as the only path to
       publishing a quest)
+- [ ] **Path CRUD** (author/order/publish a `paths` row and its
+      `path_quests` membership, added per §3.5's decision that Paths are a
+      first-class entity, not a tag)
 - [ ] Submissions/grading monitor
 - [ ] Audit log
 
-### Phase 10 — Platform Hardening & Missing-Feature Pass
+### Phase 11 — Market-Driven Content
+*New, inserted 2026-08-09 (decision 10). Sequenced after Admin (10)
+deliberately, not before: authoring content at the scale this phase
+implies ("read a massive amount of modern documentation and industry
+standards") through a hand-edited `scripts/seed-quests.ts` array is
+exactly the unmanageable pattern Phase 10 exists to retire. Also
+sequenced after Learning UI/UX (8) on purpose — new content gets authored
+directly against the final presentation model (primer field, hint field,
+path placement) instead of needing a retrofit pass later, the same
+mistake §1.5's fading principle is designed to avoid at the individual-quest
+level, applied here at the content-pipeline level.*
+- [ ] Research pass: use `firecrawl`/`context7` against current official
+      documentation and named industry-standard sources (not blog-post
+      summaries) to identify quest-shaped, high-demand skills, same
+      source-quality bar §1's original market research held itself to
+- [ ] Author quests through Phase 10's Path/Quest CRUD, not a seed script
+- [ ] Recalibrate existing difficulty/style labels against real
+      `duration_ms`/pass-fail data once volume justifies it, per §1.5's
+      labels-are-estimates principle
+
+### Phase 12 — Platform Hardening & Missing-Feature Pass *(was Phase 10)*
 *Last gate before beta invite.*
 - [ ] Quest search/filter, submission history page, public profiles
 - [ ] Discussion/hints per quest (Discord-linked is an acceptable v1)
@@ -634,11 +832,11 @@ by a re-run `/impeccable critique` before it's considered done. Closed out
 - [ ] Error/empty states audited across every surface (Playwright,
       375/768/1280px, per this project's existing UI QA standard)
 
-### Phase 11 — AI Qualitative Review *(unchanged, still deliberately last)*
+### Phase 13 — AI Qualitative Review *(was Phase 11, still deliberately last)*
 Kept exactly where it already was — a separate, later slice on top of the
 deterministic grading engine, not folded into any of the above.
 
-**Beta invite happens after Phase 10's checklist is genuinely clear**, not
+**Beta invite happens after Phase 12's checklist is genuinely clear**, not
 before — matches the explicit "hold the brakes" direction.
 
 ---
@@ -660,8 +858,8 @@ Formerly "open questions" — resolved:
    feedback on the shipped Phase 6 re-skin plus a dual-agent
    `/impeccable critique` audit (16/40). Scoped as a visual/motion/
    hierarchy pass over the existing product, not new mechanics — the
-   two-currency/streak/shop gamification economy stays in Phase 8
-   untouched. The rest of Phase 7 (`dockerfile-check`, `git-assert`, more
+   two-currency/streak/shop gamification economy stays in Phase 9
+   (Gamification) untouched. The rest of Phase 7 (`dockerfile-check`, `git-assert`, more
    Foundations content, Paths browsing) pauses until 7.5 clears its exit
    checklist, per the standing peak-potential rule.
 5. **Motion/tooling for the redesign**: no new MCP server, skill, or
@@ -677,8 +875,9 @@ Formerly "open questions" — resolved:
    live by an independent dual-agent pass, not a rubber-stamped changelog
    read. Live-updating submission status (SSE/polling on the quest-detail
    submissions list) explicitly deferred as real-time infrastructure work,
-   not UI polish — tracked as a follow-up alongside Phase 8, not silently
-   dropped. Phase 7's remaining runner/content items resume.
+   not UI polish — tracked as a follow-up alongside Phase 9
+   (Gamification), not silently dropped. Phase 7's remaining
+   runner/content items resume.
 7. **`git-assert` runner shipped** (2026-08-08), picked as the next Phase 7
    slice over `dockerfile-check` deliberately — lower novel security risk
    (inspects git history via fixed plumbing commands, doesn't execute
@@ -727,3 +926,24 @@ Formerly "open questions" — resolved:
    are more evidence for the same pattern as every prior runner bug in
    this project: build real content against a runner and it will surface
    gaps that fixture-only testing didn't reach.
+10. **Learning methodology formalized, two phases inserted** (2026-08-09).
+    Research-grounded content methodology adopted (§1.5): Educational vs.
+    Pure as an orthogonal style axis, Mastery Path vs. Standalone as an
+    orthogonal structure axis, style fading across a path per the
+    faded-worked-examples research, labels treated as estimates
+    recalibrated against real submission data rather than fixed truths.
+    Paths get a real normalized relational schema (§3.5, `paths` +
+    `path_quests` join table with `order_index`, plus `quests.style`) per
+    explicit direction to build it correctly now rather than retrofit a
+    lightweight shortcut later, even though current content volume doesn't
+    strictly require it yet. Two new phases added to the roadmap and
+    everything after them renumbered accordingly (see the phase-numbering
+    note near the top of this document): Phase 8, Learning UI/UX, a
+    dedicated research-led design pass for presenting Educational/Pure and
+    path progression, sequenced right after Phase 7 the same way 7.5
+    followed Phase 6; and Phase 11, Market-Driven Content, a
+    firecrawl/context7-backed research phase for job-market-relevant
+    content, deliberately sequenced after Admin (10) since authoring at
+    that scale needs real CRUD tooling, not a hand-edited seed script, and
+    after Learning UI/UX (8) so new content is authored directly against
+    the final presentation model instead of needing a later retrofit.
