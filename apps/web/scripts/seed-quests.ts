@@ -5,7 +5,7 @@
 // Run via `npm run db:seed-quests` — that script passes --env-file=.env.local
 // itself. Don't add an in-file dotenv import here; see the README/worker.ts
 // for why that ordering bug is a trap worth not repeating.
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../src/server/db";
 import { paths, pathQuests, quests } from "../src/server/schema";
 
@@ -621,20 +621,28 @@ Same non root, pinned tag, hadolint clean baseline as the other Docker quests, p
     "the-careless-counter",
   ];
 
-  for (let orderIndex = 0; orderIndex < pathOrder.length; orderIndex++) {
-    const slug = pathOrder[orderIndex];
-    const quest = await db.query.quests.findFirst({ where: eq(quests.slug, slug) });
-    if (!quest) {
-      throw new Error(`pathOrder references "${slug}", but no such quest was seeded above`);
-    }
-    await db
-      .insert(pathQuests)
-      .values({ pathId, questId: quest.id, orderIndex })
-      .onConflictDoUpdate({
-        target: [pathQuests.pathId, pathQuests.questId],
-        set: { orderIndex },
-      });
-  }
+  const orderedQuests = await db.query.quests.findMany({ where: inArray(quests.slug, pathOrder) });
+  const questIdBySlug = new Map(orderedQuests.map((q) => [q.slug, q.id]));
+
+  // Delete-then-bulk-insert, not a per-row upsert keyed on (pathId, questId)
+  // alone: path_quests also has a unique constraint on (pathId, orderIndex),
+  // and reordering pathOrder (swapping two slugs, inserting one in the
+  // middle) would have a still-unprocessed row holding the orderIndex an
+  // earlier row is being updated to, tripping that second constraint — one
+  // ON CONFLICT target can't arbitrate both at once. Wrapped in a
+  // transaction so a mid-loop failure can't leave the path half-reordered.
+  await db.transaction(async (tx) => {
+    await tx.delete(pathQuests).where(eq(pathQuests.pathId, pathId));
+    await tx.insert(pathQuests).values(
+      pathOrder.map((slug, orderIndex) => {
+        const questId = questIdBySlug.get(slug);
+        if (!questId) {
+          throw new Error(`pathOrder references "${slug}", but no such quest was seeded above`);
+        }
+        return { pathId, questId, orderIndex };
+      }),
+    );
+  });
   console.log(`seeded path: backend-engineering-foundations (${pathOrder.length} quests)`);
 
   process.exit(0);

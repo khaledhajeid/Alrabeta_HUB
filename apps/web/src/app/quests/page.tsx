@@ -30,10 +30,11 @@ export default async function QuestsPage({
         },
       },
     }),
+    // Standalone-membership below is derived entirely from publishedPaths'
+    // own pathQuests, so this query doesn't need its own join to path_quests.
     db.query.quests.findMany({
       where: eq(quests.status, "published"),
       orderBy: desc(quests.createdAt),
-      with: { pathQuests: true },
     }),
   ]);
 
