@@ -312,6 +312,10 @@ a real Paths structure (schema + first Mastery Path + browsing UI) all
 shipped. Phase 7.5 is done too (16/40 → 26/40, re-audit-verified, see
 below). Phase 8 (Learning UI/UX) is next.
 
+**Phase 8 closed** (2026-08-09), see the Phase 8 section below for the
+full checklist and the two real bugs its dual-agent exit-gate audit
+caught and fixed. Phase 9 (Gamification Expansion) is next.
+
 ---
 
 ## Phase 7.5 — UI/UX Redesign (A-to-Z)
@@ -545,22 +549,43 @@ slice.
 
 ---
 
-## Phase 8 — Learning UI/UX
+## Phase 8 — Learning UI/UX ✅ done
 
 *New, inserted 2026-08-09. Needs Phase 7's retrofitted Mastery Path to
 design against, not placeholder content. Same relationship to Phase 7
 that 7.5 had to Phase 6 — see `docs/MASTER_PLAN.md`'s Phase 8 entry for
-the full rationale.*
+the full rationale. Closed out 2026-08-09.*
 
-- [ ] Research pass (context7/firecrawl): visual patterns for
-      learning-curve/progression visualization, path-completion state,
-      hint presentation, on comparable platforms
-- [ ] Educational vs. Pure visual distinction: how a primer reads and is
-      visually distinguished from the challenge, how Pure-quest
-      keyword-hints are presented without becoming a disguised tutorial
-- [ ] Mastery Path progression UI: ordered sequence, current position,
-      fade-in-difficulty made visible, not just implied by list order
-- [ ] Exit gate: dual-agent audit, same methodology 7.5 used to close
+- [x] Research pass (firecrawl): progressive disclosure (Nielsen Norman
+      Group's term for "hints behind a reveal, not shown inline") and
+      stepper/timeline UI conventions, before writing any code
+- [x] Educational vs. Pure visual distinction: `quest-primer.tsx` (a
+      distinct `bg-surface-2` "Before you start" callout above the
+      challenge, closed the moment it's read) for the one Educational
+      quest; `research-hints.tsx` (a closed-by-default native `<details>`
+      panel below the challenge) for Pure quests' keyword pointers, so
+      the hint reads as opt-in rather than a disguised tutorial; a shared
+      `quest-style-badge.tsx` (book/compass icon) on both catalog cards
+      and the detail page
+- [x] Mastery Path progression UI: `path-step-dot.tsx` adapts the
+      existing activity-feed connecting-line/dot-node shape to a step
+      sequence: passed (signal checkmark), current position (accent
+      ring, gated on a real signed-in session), difficulty fade via
+      `--accent` border opacity across the tier-interleaved order
+- [x] Exit gate: dual-agent `/impeccable critique` (two isolated
+      sub-agents, neither saw the other's output), same methodology 7.5
+      used to close. Found and fixed two real bugs, not a changelog taken
+      on faith:
+      - a pre-existing, app-wide CSS bug (`globals.css`'s
+        `* { border-color: var(--line) }` was unlayered, so it beat every
+        layered `border-{color}` Tailwind utility regardless of
+        specificity, already silently flattening `BadgePill`'s and the
+        `systems` tag's violet borders before this phase). Fixed with
+        `@layer base`
+      - the "current step" ring rendering for signed-out visitors (not
+        gated on `session`). Fixed
+      Score: 30/40 pre-fix → ~38/40 post-fix, re-verified live after
+      both fixes
 
 ---
 

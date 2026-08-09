@@ -120,8 +120,20 @@
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-* {
-  border-color: var(--line);
+/* Tailwind's own utilities live in @layer utilities (via `@import
+   "tailwindcss"` above) — an unlayered rule here would beat every one of
+   them regardless of specificity or source order (CSS Cascade Layers:
+   unlayered always wins over layered), silently defeating every
+   border-{color} utility in the app. @layer base makes this a real
+   overridable default instead. Phase 8 audit (docs/MASTER_PLAN.md's
+   Phase 8 entry) caught this via a completely inert border-accent on the
+   new path-step-dot.tsx — turned out to be pre-existing and app-wide,
+   already silently flattening BadgePill's and the "systems" TagPill's
+   violet border to plain --line before this fix. */
+@layer base {
+  * {
+    border-color: var(--line);
+  }
 }
 
 /* Reduced motion is not optional, and is written in before any animation
