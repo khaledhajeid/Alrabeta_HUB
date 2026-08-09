@@ -1,0 +1,7 @@
+[
+  {
+    "name": "last line has no following blank line, and stdin ends with a trailing newline",
+    "stdin": "first\nsecond\nthird\n",
+    "expected_stdout": "first\nsecond\nthird"
+  }
+]
