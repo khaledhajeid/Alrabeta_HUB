@@ -836,15 +836,29 @@ practice benefit instead comes from a learner choosing to bounce between
 track pages at the category level, which is arguably a more honest
 application of that research than forcing interleaving into one flat list.
 
-- [ ] `tracks` table + migration: `paths` (unchanged, now the category
-      tier) -> `tracks` (new) -> `quests` (via a `track_id` replacing or
-      supplementing `path_quests`, exact shape TBD in the shape pass below)
-- [ ] Re-cut `backend-engineering-foundations`'s 12 quests into 4 real
-      tracks (Git/Bash/Docker/C-C++), each internally difficulty-ordered
-- [ ] `/impeccable shape` for the Paths hub: category cards -> track cards
+- [x] `tracks` table + migration: `paths` (unchanged, now the category
+      tier) -> `tracks` (new, own `trackIcon` enum) -> `quests` (via
+      `track_quests`, replacing Phase 7's `path_quests` entirely). Pushed
+      live, verified directly against Postgres
+- [x] Re-cut `backend-engineering-foundations`'s 12 quests into 4 real
+      tracks (Git/Bash/Docker/C-C++), each internally difficulty-ordered,
+      real per-track summary copy written, cross-track interleaving
+      dropped as no longer needed
+- [x] `/impeccable shape` for the Paths hub: category cards -> track cards
       (icon, quest count, per-track progress) -> track detail (the
       existing Phase 8 stepper, now against a real single-skill sequence
-      instead of a flattened 12-item list)
+      instead of a flattened 12-item list). Full discovery interview +
+      structured brief, user-confirmed before any code
+- [x] `craft` the Paths hub (`/paths`, `/paths/[pathSlug]`,
+      `/paths/[pathSlug]/[trackSlug]`), 4 new hand-drawn track icons,
+      `/quests` narrowed to a standalone/search catalog, nav gained a
+      "Paths" link
+- [x] Exit gate for the Paths hub: dual-agent `/impeccable critique`.
+      Found and fixed three real issues before closing (see decision 14):
+      a difficulty-tier border encoding that structurally couldn't clear
+      WCAG contrast across its own gradient, undifferentiated track cards,
+      and `/quests` silently duplicating `/paths`' content with no stated
+      relationship. Score: 30/40 pre-fix to roughly 36/40 post-fix
 - [ ] `/impeccable shape` for the Home dashboard: replaces the raw Forgejo
       activity-log homepage with progress across active paths/tracks,
       points/rank, a continue-where-you-left-off card, and Daily/
@@ -856,9 +870,9 @@ application of that research than forcing interleaving into one flat list.
       with a hard border, no blur-on-scroll or elevation, undercutting
       the Vercel/Linear/Raycast register the rest of the system already
       commits to
-- [ ] `craft` each shaped surface once its plan is signed off
-- [ ] Exit gate: same dual-agent `/impeccable critique` methodology
-      Phase 8 used, not a changelog taken on faith
+- [ ] `craft` the Home dashboard and nav/logo pass once shaped
+- [ ] Exit gate for the Home dashboard and nav/logo pass: same dual-agent
+      `/impeccable critique` methodology, not a changelog taken on faith
 
 ### Phase 9 — Gamification Expansion *(was Phase 8)*
 - [ ] Two-currency system (points/rank, spendable shop currency)
@@ -1083,3 +1097,42 @@ Formerly "open questions" — resolved:
     each plan is signed off, and the same dual-agent `/impeccable
     critique` exit gate the last two UI phases used. Full rationale in
     the Phase 8.5 section above.
+14. **Paths hub shipped and closed** (2026-08-09): the `tracks` table and
+    `track_quests` join (fully replacing `path_quests`) shipped exactly to
+    the shape brief's normalized shape, with an explicit `trackIcon` enum
+    per decision 13. All 12 quests re-cut into 4 real single-skill tracks.
+    Three new routes (`/paths`, `/paths/[pathSlug]`,
+    `/paths/[pathSlug]/[trackSlug]`) built, `/quests` narrowed to a
+    standalone/search catalog now that its inline path section moved out.
+    The dual-agent `/impeccable critique` exit gate found and fixed three
+    real issues before closing:
+    - **Difficulty-tier border encoding structurally couldn't clear WCAG
+      contrast.** The `PathStepDot` component (reused from Phase 8) faded
+      difficulty via `border-accent`'s opacity (30/65/100%). Computed
+      contrast (WCAG relative-luminance math, not eyeballed) showed even
+      the 65% "medium" tier only hit 2.80:1 in light mode, under the 3:1
+      non-text-UI threshold, and opacity structurally can't clear that bar
+      across a 3-step gradient on this palette. Fixed by decoupling color
+      from difficulty entirely: border color now stays solid
+      `border-accent` (5:1+ in both themes) for every tier, difficulty
+      fades via border width (1px/2px/4px) instead, which can't fail a
+      color-contrast check because it isn't a color. Caught a real
+      implementation bug in the first version of this fix too: color
+      without an explicit width/style utility renders no border at all in
+      Tailwind, silently making the "easy" tier invisible until corrected.
+    - **Track cards read as the same template with a swapped icon.**
+      Fixed by surfacing each track's real, already-uniform grading
+      method (git-assert, io-match, dockerfile-check, sandbox-exec) as a
+      caption, tying directly to the platform's own stated differentiator
+      (`docs/PRODUCT.md`: verifies what it grades, not just diffs stdout)
+      instead of adding decoration.
+    - **`/quests` silently duplicated 100% of `/paths`' content.** Every
+      published quest today is a track member, so the two pages showed
+      identical content with no stated relationship. Fixed with a "Part
+      of [Track]" line on `/quests` cards, computed from a real join.
+    Score: 30/40 pre-fix to roughly 36/40 post-fix, re-verified live in
+    both themes after every fix. Two P3s deliberately deferred, not
+    fixed: no lateral track-to-track navigation from a track detail page,
+    and `/paths`' single-path sparseness (an honest, temporary consequence
+    of current content volume, not a page-design flaw). Home dashboard
+    and the nav/logo pass remain open in Phase 8.5.

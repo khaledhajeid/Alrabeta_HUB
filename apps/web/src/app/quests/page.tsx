@@ -1,18 +1,21 @@
 import Link from "next/link";
-import { headers } from "next/headers";
-import { and, desc, eq, inArray } from "drizzle-orm";
-import { auth } from "@/server/auth";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/server/db";
-import { paths, quests, questSubmissions } from "@/server/schema";
+import { quests } from "@/server/schema";
 import { TagPill } from "@/components/tag-pill";
 import { TagFilterSelect } from "@/components/tag-filter-select";
 import { QuestStyleBadge } from "@/components/quest-style-badge";
-import { PathStepDot } from "@/components/path-step-dot";
 
 // Phase 7.5.G: past this many, the pill row itself becomes more complex
 // than the content it filters — collapse to a select instead.
 const MAX_INLINE_TAGS = 6;
 
+// Phase 8.5: this page dropped its inline Paths section (docs/MASTER_PLAN.md's
+// Phase 8.5 entry) — that's now its own dedicated hub at /paths (category ->
+// track -> sequence). This page's job narrowed to exactly one thing: browse
+// and filter every published quest, standalone or not, by tag. A learner
+// looking for a curated curriculum goes to /paths; a learner who wants to
+// search everything comes here.
 export default async function QuestsPage({
   searchParams,
 }: {
@@ -20,86 +23,41 @@ export default async function QuestsPage({
 }) {
   const { tag } = await searchParams;
 
-  const session = await auth.api.getSession({ headers: await headers() });
-
-  // Phase 7 close-out (docs/MASTER_PLAN.md §3.5): a real Paths structure,
-  // not just a tag pill. A path's own quests come back pre-ordered
-  // (orderIndex, ascending) — that ordering IS the curated sequence, not
-  // something this page re-derives.
-  const [publishedPaths, allPublished] = await Promise.all([
-    db.query.paths.findMany({
-      where: eq(paths.status, "published"),
-      with: {
-        pathQuests: {
-          orderBy: (pq, { asc }) => [asc(pq.orderIndex)],
-          with: { quest: true },
-        },
-      },
-    }),
-    // Standalone-membership below is derived entirely from publishedPaths'
-    // own pathQuests, so this query doesn't need its own join to path_quests.
+  const [allPublished, trackMemberships] = await Promise.all([
     db.query.quests.findMany({
       where: eq(quests.status, "published"),
       orderBy: desc(quests.createdAt),
     }),
+    // Phase 8.5 critique fix (P2): every published quest today happens to
+    // belong to a track, which made this page and /paths look like
+    // duplicate content with no stated relationship. Surfacing "part of
+    // <track>" here makes the relationship visible instead of implicit,
+    // and gives a way back into a track from search.
+    db.query.trackQuests.findMany({
+      with: { track: { with: { path: true } } },
+    }),
   ]);
+  const trackByQuestId = new Map(
+    trackMemberships.map((tq) => [
+      tq.questId,
+      { trackTitle: tq.track.title, trackSlug: tq.track.slug, pathSlug: tq.track.path.slug },
+    ]),
+  );
 
   const allTags = [...new Set(allPublished.flatMap((q) => q.tags))].sort();
   const matchesTag = (t: string[]) => !tag || t.includes(tag);
-
-  // Standalone = published but not a member of any published path — this
-  // is derived from path membership, not a stored flag (§3.5: storing
-  // "is this standalone" as its own column would be redundant, derivable
-  // state).
-  const pathQuestIds = new Set(
-    publishedPaths.flatMap((p) => p.pathQuests.map((pq) => pq.questId)),
-  );
-  const standalone = allPublished.filter((q) => !pathQuestIds.has(q.id));
-
-  // Phase 8: "current position" is real progress, not just implied by list
-  // order — the first not-yet-passed step in each path, derived from the
-  // signed-in user's own submission history. Signed-out visitors still see
-  // the sequence and its difficulty fade, just no passed/current state.
-  const passedQuestIds = new Set<string>(
-    session && pathQuestIds.size > 0
-      ? (
-          await db.query.questSubmissions.findMany({
-            where: and(
-              eq(questSubmissions.userId, session.user.id),
-              eq(questSubmissions.status, "passed"),
-              inArray(questSubmissions.questId, [...pathQuestIds]),
-            ),
-            columns: { questId: true },
-          })
-        ).map((s) => s.questId)
-      : [],
-  );
-
-  // Computed against each path's full, untagged-filtered order — a tag
-  // filter narrowing which rows are visible shouldn't change what "current"
-  // means for the path as a whole. Gated on session: with no signed-in
-  // user there's no real progress to mark "current" against, and the ring
-  // rendering on quest 1 regardless would read as personalized tracking
-  // that isn't actually happening (Phase 8 audit finding).
-  const currentQuestIdByPath = new Map(
-    session
-      ? publishedPaths.map((p) => [
-          p.id,
-          p.pathQuests.find((pq) => !passedQuestIds.has(pq.questId))?.questId,
-        ])
-      : [],
-  );
-
-  const visiblePaths = publishedPaths
-    .map((p) => ({ ...p, pathQuests: p.pathQuests.filter((pq) => matchesTag(pq.quest.tags)) }))
-    .filter((p) => p.pathQuests.length > 0);
-  const visibleStandalone = standalone.filter((q) => matchesTag(q.tags));
-
-  const nothingVisible = visiblePaths.length === 0 && visibleStandalone.length === 0;
+  const visibleQuests = allPublished.filter((q) => matchesTag(q.tags));
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
       <h1 className="text-xl font-semibold text-text">Quests</h1>
+      <p className="mt-1.5 text-sm text-text-muted">
+        Every published quest, searchable by tag. Looking for a curated sequence instead?{" "}
+        <Link href="/paths" className="text-accent hover:underline">
+          Browse Paths
+        </Link>
+        .
+      </p>
 
       {allTags.length > 0 &&
         (allTags.length > MAX_INLINE_TAGS ? (
@@ -132,87 +90,42 @@ export default async function QuestsPage({
           </div>
         ))}
 
-      {nothingVisible ? (
+      {visibleQuests.length === 0 ? (
         <div className="mt-6 rounded-lg border border-dashed border-line px-5 py-10 text-center">
           <p className="text-sm text-text-muted">
             {tag ? `No published quests tagged "${tag}" yet.` : "No quests published yet."}
           </p>
         </div>
       ) : (
-        <div className="mt-8 flex flex-col gap-10">
-          {visiblePaths.map((path) => (
-            <section key={path.id}>
-              <h2 className="text-base font-semibold text-text">{path.title}</h2>
-              <p className="mt-1 text-sm text-text-muted">{path.summary}</p>
-              <ol className="reveal-list mt-4 flex flex-col gap-2">
-                {path.pathQuests.map(({ quest, orderIndex }, i) => (
-                  <li key={quest.id} className="flex items-stretch gap-3">
-                    <PathStepDot
-                      position={orderIndex + 1}
-                      difficulty={quest.difficulty}
-                      passed={passedQuestIds.has(quest.id)}
-                      current={currentQuestIdByPath.get(path.id) === quest.id}
-                      isLast={i === path.pathQuests.length - 1}
-                    />
-                    <Link
-                      href={`/quests/${quest.slug}`}
-                      className="flex flex-1 items-center gap-4 rounded-lg bg-surface p-4 shadow-resting transition-[box-shadow,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:-translate-y-0.5 hover:shadow-raised"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm leading-snug font-semibold text-text">{quest.title}</h3>
-                          <span className="shrink-0 font-mono text-xs text-text-muted">
-                            {quest.points} pts
-                          </span>
-                        </div>
-                        <p className="mt-1 line-clamp-1 text-sm text-text-muted">{quest.summary}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-xs text-text-muted">{quest.difficulty}</span>
-                          <QuestStyleBadge style={quest.style} />
-                          {quest.tags.map((t) => (
-                            <TagPill key={t} tag={t} />
-                          ))}
-                        </div>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          ))}
-
-          {visibleStandalone.length > 0 && (
-            <section>
-              {visiblePaths.length > 0 && (
-                <h2 className="text-base font-semibold text-text">Standalone</h2>
-              )}
-              {/* Phase 7.5.E card-grid pattern — a browsable, unordered
-                  catalog reads as cards, unlike a path's curated sequence
-                  above, which reads as an ordered list on purpose. */}
-              <div className="reveal-list mt-4 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
-                {visibleStandalone.map((quest) => (
-                  <Link
-                    key={quest.id}
-                    href={`/quests/${quest.slug}`}
-                    className="flex flex-col gap-3 rounded-lg bg-surface p-5 shadow-resting transition-[box-shadow,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:-translate-y-0.5 hover:shadow-raised"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-base leading-snug font-semibold text-text">{quest.title}</h3>
-                      <span className="shrink-0 font-mono text-xs text-text-muted">{quest.points} pts</span>
-                    </div>
-                    <p className="line-clamp-2 text-sm text-text-muted">{quest.summary}</p>
-                    <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
-                      <span className="font-mono text-xs text-text-muted">{quest.difficulty}</span>
-                      <QuestStyleBadge style={quest.style} />
-                      {quest.tags.map((t) => (
-                        <TagPill key={t} tag={t} />
-                      ))}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+        <div className="reveal-list mt-8 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
+          {visibleQuests.map((quest) => {
+            const membership = trackByQuestId.get(quest.id);
+            return (
+              <Link
+                key={quest.id}
+                href={`/quests/${quest.slug}`}
+                className="flex flex-col gap-3 rounded-lg bg-surface p-5 shadow-resting transition-[box-shadow,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:-translate-y-0.5 hover:shadow-raised"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-base leading-snug font-semibold text-text">{quest.title}</h3>
+                  <span className="shrink-0 font-mono text-xs text-text-muted">{quest.points} pts</span>
+                </div>
+                <p className="line-clamp-2 text-sm text-text-muted">{quest.summary}</p>
+                {membership && (
+                  <span className="font-mono text-xs text-text-muted">
+                    Part of <span className="text-accent">{membership.trackTitle}</span>
+                  </span>
+                )}
+                <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+                  <span className="font-mono text-xs text-text-muted">{quest.difficulty}</span>
+                  <QuestStyleBadge style={quest.style} />
+                  {quest.tags.map((t) => (
+                    <TagPill key={t} tag={t} />
+                  ))}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

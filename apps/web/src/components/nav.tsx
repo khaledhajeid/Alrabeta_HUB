@@ -7,6 +7,7 @@ import { AuthButton } from "./auth-button";
 import { MobileMenu } from "./mobile-menu";
 
 const LINKS = [
+  { href: "/paths", label: "Paths" },
   { href: "/quests", label: "Quests" },
   { href: "/repos", label: "Repos" },
   { href: "/profile", label: "Profile" },
