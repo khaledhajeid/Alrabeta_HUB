@@ -158,8 +158,8 @@ decisions that haven't been made yet.
 - [x] `dockerfile-check` full integration — `runners/dockerfile-check.ts`
       wired into `judge.ts`/`grading-queue.ts`/`judge-worker.ts` following
       the same pattern as the other three runners, no custom judge image
-      needed since Kaniko/hadolint/skopeo are all upstream images doing
-      exactly what's needed. `infra/docker-compose.yml` gained the
+      needed since Kaniko and hadolint are upstream images doing exactly
+      what's needed. `infra/docker-compose.yml` gained the
       `dockerfile-check-proxy` service and the pinned-name
       `dockerfile-check-internal` network (promoted straight from the PoC,
       dropping the `-poc-` naming). Assertion set: `builds-successfully`,
@@ -172,6 +172,19 @@ decisions that haven't been made yet.
       squid 403, confirming the containment boundary holds end to end,
       not just inside the standalone harness. New seeded quest:
       `containerize-it-right` (Docker Foundations track).
+- [x] `dockerfile-check` bugfix: `has-healthcheck` was silently unable to
+      ever pass. `skopeo inspect --config` was the original source for
+      image metadata, and it turns out to drop the `Healthcheck` field
+      entirely, even when a real `HEALTHCHECK` instruction produced one,
+      confirmed by extracting the raw OCI config blob directly from the
+      tarball and finding it correctly present there. Found while
+      building a quest around this exact assertion, before it shipped,
+      not after. Fixed by reading the raw config blob directly
+      (`manifest.json` -> `Config` digest -> that file) instead of
+      shelling out to skopeo at all, which also drops skopeo as a
+      dependency entirely. Re-verified the existing pass/fail paths for
+      no regression, then the healthcheck-present and healthcheck-absent
+      cases both graded correctly for the first time.
       All four Foundations tracks now have a working runner.
 - [x] Implement `git-assert` runner — a genuinely different trust model
       than `sandbox-exec`/`io-match`: it doesn't execute anything the

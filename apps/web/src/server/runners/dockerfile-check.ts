@@ -1,4 +1,5 @@
-import { mkdir, readFile, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { run } from "./exec";
 import type { RunnerContext, DockerfileCheckVerdict } from "./types";
@@ -13,7 +14,6 @@ import type { RunnerContext, DockerfileCheckVerdict } from "./types";
 // anything the submitter wrote, so it doesn't need its own sandbox.
 const KANIKO_IMAGE = process.env.DOCKERFILE_CHECK_KANIKO_IMAGE ?? "gcr.io/kaniko-project/executor:v1.23.2";
 const HADOLINT_IMAGE = process.env.DOCKERFILE_CHECK_HADOLINT_IMAGE ?? "hadolint/hadolint:2.12.0";
-const SKOPEO_IMAGE = process.env.DOCKERFILE_CHECK_SKOPEO_IMAGE ?? "quay.io/skopeo/stable:v1.15.2";
 // Matches the compose service in infra/docker-compose.yml — the proxy is
 // the only thing with a route off DOCKERFILE_CHECK_NETWORK, which has no
 // WAN route of its own (see the PoC README for why that ordering, not the
@@ -22,7 +22,7 @@ const PROXY_URL = process.env.DOCKERFILE_CHECK_PROXY_URL ?? "http://dockerfile-c
 const INTERNAL_NETWORK = process.env.DOCKERFILE_CHECK_NETWORK ?? "dockerfile-check-internal";
 const BUILD_TIMEOUT_MS = 90_000;
 const HADOLINT_TIMEOUT_MS = 15_000;
-const SKOPEO_TIMEOUT_MS = 15_000;
+const CONFIG_EXTRACT_TIMEOUT_MS = 10_000;
 const MEMORY_CAP = "512m";
 const CPU_CAP = "2";
 const PIDS_CAP = "256";
@@ -72,9 +72,7 @@ async function runHadolint(dockerfilePath: string): Promise<HadolintFinding[]> {
   }
 }
 
-type SkopeoConfig = {
-  config?: { User?: string; Healthcheck?: unknown };
-};
+type ImageConfig = { User?: string; Healthcheck?: unknown };
 
 async function buildWithKaniko(extractDir: string, outputDir: string, tarPath: string) {
   const buildArgs = [
@@ -119,17 +117,32 @@ async function buildWithKaniko(extractDir: string, outputDir: string, tarPath: s
   return { succeeded: result.code === 0, stderr: result.stderr, stdout: result.stdout, tarPath };
 }
 
-async function inspectImage(tarPath: string): Promise<SkopeoConfig | null> {
-  const { stdout, code } = await run(
-    "docker",
-    ["run", "--rm", "-v", `${tarPath}:/image.tar:ro`, SKOPEO_IMAGE, "inspect", "--config", "docker-archive:/image.tar"],
-    SKOPEO_TIMEOUT_MS,
-  );
-  if (code !== 0) return null;
+// `skopeo inspect --config` was tried first, but verified directly (not
+// assumed) to silently drop the `Healthcheck` field even when one is
+// genuinely present in the image: a real Dockerfile with a HEALTHCHECK
+// instruction produced a config with no `Healthcheck` key at all in
+// skopeo's output, while the *raw* OCI config blob (extracted straight
+// from the tarball's manifest.json -> Config digest -> that file) had it
+// correctly. Reading the raw config directly avoids depending on
+// whichever subset of fields skopeo's own output format happens to
+// surface, and drops a whole extra image dependency in the process.
+async function readImageConfig(tarPath: string): Promise<ImageConfig | null> {
+  const extractDir = await mkdtemp(path.join(tmpdir(), "oci-config-"));
   try {
-    return JSON.parse(stdout);
+    const manifestExtract = await run("tar", ["-xf", tarPath, "-C", extractDir, "manifest.json"], CONFIG_EXTRACT_TIMEOUT_MS);
+    if (manifestExtract.code !== 0) return null;
+    const manifest = JSON.parse(await readFile(path.join(extractDir, "manifest.json"), "utf8"));
+    const configDigest: string | undefined = manifest[0]?.Config;
+    if (!configDigest) return null;
+
+    const configExtract = await run("tar", ["-xf", tarPath, "-C", extractDir, configDigest], CONFIG_EXTRACT_TIMEOUT_MS);
+    if (configExtract.code !== 0) return null;
+    const configJson = JSON.parse(await readFile(path.join(extractDir, configDigest), "utf8"));
+    return configJson.config ?? null;
   } catch {
     return null;
+  } finally {
+    await rm(extractDir, { recursive: true, force: true });
   }
 }
 
@@ -156,10 +169,10 @@ export async function runDockerfileCheck(ctx: RunnerContext): Promise<Dockerfile
     runHadolint(dockerfilePath),
   ]);
 
-  let skopeoConfig: SkopeoConfig | null = null;
+  let imageConfig: ImageConfig | null = null;
   let imageBytes: number | null = null;
   if (build.succeeded) {
-    skopeoConfig = await inspectImage(tarPath);
+    imageConfig = await readImageConfig(tarPath);
     try {
       imageBytes = (await stat(tarPath)).size;
     } catch {
@@ -189,7 +202,7 @@ export async function runDockerfileCheck(ctx: RunnerContext): Promise<Dockerfile
           addCheck("runs-as-non-root", false, "cannot inspect image, build failed");
           break;
         }
-        const user = skopeoConfig?.config?.User;
+        const user = imageConfig?.User;
         const passed = !!user && user.trim() !== "" && user.trim() !== "0" && user.trim() !== "root";
         addCheck("runs-as-non-root", passed, passed ? `runs as USER ${user}` : "no USER directive set, image runs as root");
         break;
@@ -242,7 +255,7 @@ export async function runDockerfileCheck(ctx: RunnerContext): Promise<Dockerfile
           addCheck("has-healthcheck", false, "cannot inspect image, build failed");
           break;
         }
-        const passed = !!skopeoConfig?.config?.Healthcheck;
+        const passed = !!imageConfig?.Healthcheck;
         addCheck("has-healthcheck", passed, passed ? "HEALTHCHECK is set" : "no HEALTHCHECK instruction found");
         break;
       }
