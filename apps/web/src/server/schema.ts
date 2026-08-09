@@ -169,6 +169,10 @@ export const quests = pgTable("quests", {
 // docs/MASTER_PLAN.md §3.5 for the full reasoning. An admin needs to
 // author/draft/publish a path independent of any single quest inside it,
 // the same reason `quests` itself has these columns.
+//
+// Phase 8.5: `paths` is the top-level curriculum category ("Backend
+// Engineering Foundations") — it no longer owns quests directly. See
+// `tracks` below for the tier that actually does.
 export const paths = pgTable("paths", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
@@ -182,23 +186,67 @@ export const paths = pgTable("paths", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// A proper join table with its own `orderIndex` attribute, not an array of
-// quest IDs on `paths` and not a `pathId` column directly on `quests` —
-// path membership is a relationship with its own data (position in the
-// sequence), exactly the case a join table exists for. A quest belonging
-// to exactly one path is the common case today, but nothing here assumes
-// that; a foundational quest reused as the intro to two different paths
-// is a real many-to-many relationship this already supports, not a hack
-// bolted on later. "Standalone" is simply the absence of a row here for a
-// given quest, not a boolean flag anywhere — storing that as its own
-// column would be redundant, derivable state.
-export const pathQuests = pgTable(
-  "path_quests",
+// An explicit authored choice, not inferred from a quest's tags — a track's
+// icon is chosen once when the track is created, the same reasoning
+// questStyle's own comment gives for not leaving a value to an implicit
+// default nobody actually chose.
+export const trackIcon = pgEnum("track_icon", ["git", "bash", "docker", "systems"]);
+
+// Phase 8.5: the tier a flat `paths` -> `quests` model was missing — see
+// docs/MASTER_PLAN.md's Phase 8.5 entry and decision 13. A track is a
+// single-skill ordered quest sequence (Git, Bash/Linux, Docker, C/C++)
+// belonging to exactly one path, matching the Path -> Track -> Module
+// hierarchy Codecademy and Pluralsight both already use in production.
+// Same reasoning as `paths` for why this is a real table and not a tag:
+// a track needs its own title/summary/icon/ordering independent of any
+// single quest inside it.
+export const tracks = pgTable(
+  "tracks",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
     pathId: uuid("path_id")
       .notNull()
       .references(() => paths.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    icon: trackIcon("icon").notNull(),
+    // Position among this track's sibling tracks within the same path —
+    // same shape as path_quests' old orderIndex, one tier up.
+    orderIndex: integer("order_index").notNull(),
+    status: questStatus("status").notNull().default("draft"),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // Two tracks in the same path can't claim the same slot.
+    unique("tracks_path_order_unique").on(table.pathId, table.orderIndex),
+    // Covers "fetch this path's tracks in order" as a single indexed scan.
+    index("tracks_path_order_idx").on(table.pathId, table.orderIndex),
+  ],
+);
+
+// A proper join table with its own `orderIndex` attribute, not an array of
+// quest IDs on `tracks` and not a `trackId` column directly on `quests` —
+// track membership is a relationship with its own data (position in the
+// sequence), exactly the case a join table exists for. A quest belonging
+// to exactly one track is the common case today, but nothing here assumes
+// that; a foundational quest reused as the intro to two different tracks
+// is a real many-to-many relationship this already supports, not a hack
+// bolted on later. "Standalone" is simply the absence of a row here for a
+// given quest, not a boolean flag anywhere — storing that as its own
+// column would be redundant, derivable state. Replaces Phase 7's
+// `path_quests` now that quests belong to a track, not a path, directly.
+export const trackQuests = pgTable(
+  "track_quests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    trackId: uuid("track_id")
+      .notNull()
+      .references(() => tracks.id, { onDelete: "cascade" }),
     questId: uuid("quest_id")
       .notNull()
       .references(() => quests.id, { onDelete: "cascade" }),
@@ -206,14 +254,14 @@ export const pathQuests = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    // A quest can't appear twice in the same path...
-    unique("path_quests_path_quest_unique").on(table.pathId, table.questId),
-    // ...and two quests can't claim the same slot in a path.
-    unique("path_quests_path_order_unique").on(table.pathId, table.orderIndex),
-    // Covers "fetch this path's quests in order" as a single indexed scan
+    // A quest can't appear twice in the same track...
+    unique("track_quests_track_quest_unique").on(table.trackId, table.questId),
+    // ...and two quests can't claim the same slot in a track.
+    unique("track_quests_track_order_unique").on(table.trackId, table.orderIndex),
+    // Covers "fetch this track's quests in order" as a single indexed scan
     // (equality column first, sort column last) rather than a sort step —
     // same indexing discipline as quest_submissions' covering index above.
-    index("path_quests_path_order_idx").on(table.pathId, table.orderIndex),
+    index("track_quests_track_order_idx").on(table.trackId, table.orderIndex),
   ],
 );
 
@@ -297,15 +345,21 @@ export const badges = pgTable(
 
 export const questsRelations = relations(quests, ({ one, many }) => ({
   author: one(user, { fields: [quests.authorId], references: [user.id] }),
-  pathQuests: many(pathQuests),
+  trackQuests: many(trackQuests),
 }));
 
 export const pathsRelations = relations(paths, ({ one, many }) => ({
   author: one(user, { fields: [paths.authorId], references: [user.id] }),
-  pathQuests: many(pathQuests),
+  tracks: many(tracks),
 }));
 
-export const pathQuestsRelations = relations(pathQuests, ({ one }) => ({
-  path: one(paths, { fields: [pathQuests.pathId], references: [paths.id] }),
-  quest: one(quests, { fields: [pathQuests.questId], references: [quests.id] }),
+export const tracksRelations = relations(tracks, ({ one, many }) => ({
+  path: one(paths, { fields: [tracks.pathId], references: [paths.id] }),
+  author: one(user, { fields: [tracks.authorId], references: [user.id] }),
+  trackQuests: many(trackQuests),
+}));
+
+export const trackQuestsRelations = relations(trackQuests, ({ one }) => ({
+  track: one(tracks, { fields: [trackQuests.trackId], references: [tracks.id] }),
+  quest: one(quests, { fields: [trackQuests.questId], references: [quests.id] }),
 }));

@@ -597,17 +597,35 @@ for the full rationale (root cause: `paths` to `quests` is only two data
 tiers, so there is no queryable "Git track" vs "Bash track", only
 informal tags).*
 
-- [ ] `tracks` table + migration: `paths` (category tier, unchanged) then
-      `tracks` (new) then `quests`, replacing or supplementing
-      `path_quests` with a track-scoped join, exact shape decided in the
-      shape pass below
-- [ ] Re-cut `backend-engineering-foundations`'s 12 quests into 4 real
+- [x] `tracks` table + migration: `paths` (category tier, unchanged),
+      `tracks` (new, own `trackIcon` enum), `track_quests` (new join,
+      fully replacing Phase 7's `path_quests`). Pushed live, verified
+      against Postgres directly
+- [x] Re-cut `backend-engineering-foundations`'s 12 quests into 4 real
       tracks (Git, Bash/Linux, Docker, C/C++), each internally
-      difficulty-ordered, dropping the now-unnecessary cross-track
-      interleaving
-- [ ] `/impeccable shape` for the Paths hub: category cards, track cards
+      difficulty-ordered, real per-track summary copy, cross-track
+      interleaving dropped as no longer needed
+- [x] `/impeccable shape` for the Paths hub: category cards, track cards
       (icon, quest count, per-track progress), track detail (the
-      existing Phase 8 stepper against a real single-skill sequence)
+      existing Phase 8 stepper against a real single-skill sequence).
+      Full discovery interview + structured brief, user-confirmed
+- [x] `craft` the Paths hub: `/paths`, `/paths/[pathSlug]`,
+      `/paths/[pathSlug]/[trackSlug]`, 4 new hand-drawn track icons
+      (`track-icon.tsx`), `/quests` narrowed to standalone/search, nav
+      gained a "Paths" link
+- [x] Exit gate for the Paths hub: dual-agent `/impeccable critique`.
+      Found and fixed 3 real issues, see `docs/MASTER_PLAN.md` decision
+      14 for full detail:
+      - difficulty-tier border encoding that structurally couldn't clear
+        WCAG contrast across its own gradient (opacity-based, now
+        width-based; also caught a real Tailwind bug where color without
+        an explicit width utility renders no border at all)
+      - undifferentiated track cards (now surface each track's real
+        grading method as a caption)
+      - `/quests` silently duplicating `/paths`' content (now shows
+        "Part of [Track]" per quest)
+      Score: 30/40 pre-fix → ~36/40 post-fix. 2 P3s deliberately deferred
+      (lateral track-to-track nav, single-path sparseness)
 - [ ] `/impeccable shape` for the Home dashboard: progress across active
       paths/tracks, points/rank, continue-where-you-left-off, Daily/
       Standalone quests; activity feed demotes to a secondary module or
@@ -615,9 +633,9 @@ informal tags).*
 - [ ] Nav/logo pass: icon mark illegible at 28px nav scale, nav shell
       lacks elevation/blur-on-scroll relative to the Vercel/Linear/
       Raycast register the rest of the system commits to
-- [ ] `craft` each shaped surface once its plan is signed off
-- [ ] Exit gate: same dual-agent `/impeccable critique` methodology
-      Phase 8 used
+- [ ] `craft` the Home dashboard and nav/logo pass once shaped
+- [ ] Exit gate for the Home dashboard and nav/logo pass: same dual-agent
+      `/impeccable critique` methodology
 
 ---
 

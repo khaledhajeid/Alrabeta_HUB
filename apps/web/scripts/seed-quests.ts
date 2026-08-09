@@ -7,7 +7,7 @@
 // for why that ordering bug is a trap worth not repeating.
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../src/server/db";
-import { paths, pathQuests, quests } from "../src/server/schema";
+import { paths, tracks, trackQuests, quests } from "../src/server/schema";
 
 async function main() {
   const khaled = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.name, "khaled") });
@@ -594,23 +594,24 @@ Same non root, pinned tag, hadolint clean baseline as the other Docker quests, p
     console.log(`seeded: ${quest.slug}`);
   }
 
-  // The platform's first real Mastery Path (docs/MASTER_PLAN.md §1.5/§3.5)
-  // — organizes the 12 quests above rather than introducing new ones.
-  // Ordering is tier-interleaved across all four tracks (easy tier, then
-  // medium, then hard), not track-blocked (all of Git, then all of Bash,
-  // ...), per the interleaved-practice research cited in §1.5: spacing
-  // different skills within a sequence measurably beats block formats.
-  // Git leads every tier, matching §1's "flagship track, not filler"
-  // finding; C/C++ trails every tier, matching §1's framing of it as the
-  // platform's existing differentiator folded into this launch Path
-  // rather than a separate track.
+  // The platform's first real Mastery Path (docs/MASTER_PLAN.md §1.5/§3.5),
+  // now with a real tracks tier underneath it (Phase 8.5, decision 13):
+  // paths -> tracks -> quests, not the flat paths -> quests shape Phase 7
+  // shipped. Git leads (matches §1's "flagship track, not filler" finding),
+  // C/C++ trails (matches §1's framing of it as the platform's existing
+  // differentiator folded into this launch Path). Cross-track interleaving
+  // from the Phase 7 retrofit is gone on purpose: once quests are grouped
+  // into single-skill tracks, a track is naturally difficulty-ordered
+  // within one skill, and the interleaved-practice benefit instead comes
+  // from a learner choosing to bounce between track pages at the category
+  // level (see the Phase 8.5 entry in MASTER_PLAN.md for the full reasoning).
   const [{ id: pathId }] = await db
     .insert(paths)
     .values({
       slug: "backend-engineering-foundations",
       title: "Backend Engineering Foundations",
       summary:
-        "Git, Bash/Linux, Docker, and systems C/C++ — the four tracks that make a backend dev competitive, in one curated sequence.",
+        "Git, Bash/Linux, Docker, and systems C/C++, the four tracks that make a backend dev competitive.",
       status: "published",
       authorId,
     })
@@ -619,51 +620,103 @@ Same non root, pinned tag, hadolint clean baseline as the other Docker quests, p
       set: {
         title: "Backend Engineering Foundations",
         summary:
-          "Git, Bash/Linux, Docker, and systems C/C++ — the four tracks that make a backend dev competitive, in one curated sequence.",
+          "Git, Bash/Linux, Docker, and systems C/C++, the four tracks that make a backend dev competitive.",
         status: "published",
         updatedAt: new Date(),
       },
     })
     .returning({ id: paths.id });
 
-  const pathOrder = [
-    "three-clean-commits",
-    "extract-failed-logins",
-    "containerize-it-right",
-    "reverse-without-recursion",
-    "no-giant-commits",
-    "tally-the-status-codes",
-    "slim-it-down",
-    "the-leaky-bucket",
-    "scoped-and-squashed",
-    "group-the-sessions",
-    "ship-it-with-a-healthcheck",
-    "the-careless-counter",
+  const trackDefs = [
+    {
+      slug: "git-fundamentals",
+      title: "Git Fundamentals",
+      summary: "History hygiene and real git workflows: shaping commits, not just making them.",
+      icon: "git" as const,
+      // Naturally difficulty-ordered within one skill (easy -> medium -> hard),
+      // not interleaved with any other track.
+      questOrder: ["three-clean-commits", "no-giant-commits", "scoped-and-squashed"],
+    },
+    {
+      slug: "bash-linux-fundamentals",
+      title: "Bash & Linux Fundamentals",
+      summary: "Parsing, filtering, and aggregating text with nothing but stock POSIX tools.",
+      icon: "bash" as const,
+      questOrder: ["extract-failed-logins", "tally-the-status-codes", "group-the-sessions"],
+    },
+    {
+      slug: "docker-fundamentals",
+      title: "Docker Fundamentals",
+      summary: "Dockerfiles that build clean, run safely, and stay small enough to ship.",
+      icon: "docker" as const,
+      questOrder: ["containerize-it-right", "slim-it-down", "ship-it-with-a-healthcheck"],
+    },
+    {
+      slug: "c-cpp-systems-programming",
+      title: "C/C++ Systems Programming",
+      summary: "Memory and concurrency bugs you can only find by actually looking for them.",
+      icon: "systems" as const,
+      questOrder: ["reverse-without-recursion", "the-leaky-bucket", "the-careless-counter"],
+    },
   ];
 
-  const orderedQuests = await db.query.quests.findMany({ where: inArray(quests.slug, pathOrder) });
-  const questIdBySlug = new Map(orderedQuests.map((q) => [q.slug, q.id]));
-
-  // Delete-then-bulk-insert, not a per-row upsert keyed on (pathId, questId)
-  // alone: path_quests also has a unique constraint on (pathId, orderIndex),
-  // and reordering pathOrder (swapping two slugs, inserting one in the
-  // middle) would have a still-unprocessed row holding the orderIndex an
-  // earlier row is being updated to, tripping that second constraint — one
-  // ON CONFLICT target can't arbitrate both at once. Wrapped in a
-  // transaction so a mid-loop failure can't leave the path half-reordered.
-  await db.transaction(async (tx) => {
-    await tx.delete(pathQuests).where(eq(pathQuests.pathId, pathId));
-    await tx.insert(pathQuests).values(
-      pathOrder.map((slug, orderIndex) => {
-        const questId = questIdBySlug.get(slug);
-        if (!questId) {
-          throw new Error(`pathOrder references "${slug}", but no such quest was seeded above`);
-        }
-        return { pathId, questId, orderIndex };
-      }),
-    );
+  const allTrackQuestSlugs = trackDefs.flatMap((t) => t.questOrder);
+  const trackQuestRows = await db.query.quests.findMany({
+    where: inArray(quests.slug, allTrackQuestSlugs),
   });
-  console.log(`seeded path: backend-engineering-foundations (${pathOrder.length} quests)`);
+  const questIdBySlug = new Map(trackQuestRows.map((q) => [q.slug, q.id]));
+
+  for (const [trackIndex, def] of trackDefs.entries()) {
+    const [{ id: trackId }] = await db
+      .insert(tracks)
+      .values({
+        slug: def.slug,
+        pathId,
+        title: def.title,
+        summary: def.summary,
+        icon: def.icon,
+        orderIndex: trackIndex,
+        status: "published",
+        authorId,
+      })
+      .onConflictDoUpdate({
+        target: tracks.slug,
+        set: {
+          pathId,
+          title: def.title,
+          summary: def.summary,
+          icon: def.icon,
+          orderIndex: trackIndex,
+          status: "published",
+          updatedAt: new Date(),
+        },
+      })
+      .returning({ id: tracks.id });
+
+    // Delete-then-bulk-insert, not a per-row upsert keyed on (trackId, questId)
+    // alone: track_quests also has a unique constraint on (trackId, orderIndex),
+    // and reordering questOrder (swapping two slugs, inserting one in the
+    // middle) would have a still-unprocessed row holding the orderIndex an
+    // earlier row is being updated to, tripping that second constraint, one
+    // ON CONFLICT target can't arbitrate both at once. Wrapped in a
+    // transaction so a mid-loop failure can't leave a track half-reordered
+    // (same pattern the Phase 8 code review fixed for the old path_quests).
+    await db.transaction(async (tx) => {
+      await tx.delete(trackQuests).where(eq(trackQuests.trackId, trackId));
+      await tx.insert(trackQuests).values(
+        def.questOrder.map((slug, orderIndex) => {
+          const questId = questIdBySlug.get(slug);
+          if (!questId) {
+            throw new Error(`track "${def.slug}" references "${slug}", but no such quest was seeded above`);
+          }
+          return { trackId, questId, orderIndex };
+        }),
+      );
+    });
+    console.log(`seeded track: ${def.slug} (${def.questOrder.length} quests)`);
+  }
+
+  console.log(`seeded path: backend-engineering-foundations (${trackDefs.length} tracks)`);
 
   process.exit(0);
 }
