@@ -104,6 +104,18 @@ export const activityEvents = pgTable(
 export const questDifficulty = pgEnum("quest_difficulty", ["easy", "medium", "hard"]);
 export const questStatus = pgEnum("quest_status", ["draft", "published"]);
 
+// Independent of difficulty (see docs/MASTER_PLAN.md §1.5) — an easy Pure
+// quest and a hard Educational quest both make sense, neither implies the
+// other. "educational" = a short primer immediately before the challenge;
+// "pure" = the full problem statement plus keyword/concept pointers for
+// external research, no taught concept in-house. Defaults to "pure" only
+// so `db:push` doesn't need an interactive per-row prompt for the existing
+// 12 quests — every one of them gets an explicit, deliberately-chosen
+// value during the Phase 7 retrofit (scripts/seed-quests.ts), not left to
+// this default (§3.5: "not left to an implicit schema default that nobody
+// actually chose").
+export const questStyle = pgEnum("quest_style", ["educational", "pure"]);
+
 // Which grading strategy judge.ts dispatches to — see src/server/runners/.
 // sandbox-exec is the original (and only implemented) C/C++ sanitizer flow;
 // the other three are Phase 7 additions, some not built yet (dockerfile-check
@@ -131,6 +143,7 @@ export const quests = pgTable("quests", {
     .notNull()
     .references(() => user.id),
   status: questStatus("status").notNull().default("draft"),
+  style: questStyle("style").notNull().default("pure"),
   runner: questRunner("runner").notNull().default("sandbox-exec"),
   // Shape depends on `runner` — e.g. io-match's { entryFile, cases: [...] }.
   // sandbox-exec needs none of this (judge.sh works by file-extension
@@ -139,6 +152,58 @@ export const quests = pgTable("quests", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// A real normalized entity, not a tag or an enum on `quests` — see
+// docs/MASTER_PLAN.md §3.5 for the full reasoning. An admin needs to
+// author/draft/publish a path independent of any single quest inside it,
+// the same reason `quests` itself has these columns.
+export const paths = pgTable("paths", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  status: questStatus("status").notNull().default("draft"),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => user.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// A proper join table with its own `orderIndex` attribute, not an array of
+// quest IDs on `paths` and not a `pathId` column directly on `quests` —
+// path membership is a relationship with its own data (position in the
+// sequence), exactly the case a join table exists for. A quest belonging
+// to exactly one path is the common case today, but nothing here assumes
+// that; a foundational quest reused as the intro to two different paths
+// is a real many-to-many relationship this already supports, not a hack
+// bolted on later. "Standalone" is simply the absence of a row here for a
+// given quest, not a boolean flag anywhere — storing that as its own
+// column would be redundant, derivable state.
+export const pathQuests = pgTable(
+  "path_quests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pathId: uuid("path_id")
+      .notNull()
+      .references(() => paths.id, { onDelete: "cascade" }),
+    questId: uuid("quest_id")
+      .notNull()
+      .references(() => quests.id, { onDelete: "cascade" }),
+    orderIndex: integer("order_index").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // A quest can't appear twice in the same path...
+    unique("path_quests_path_quest_unique").on(table.pathId, table.questId),
+    // ...and two quests can't claim the same slot in a path.
+    unique("path_quests_path_order_unique").on(table.pathId, table.orderIndex),
+    // Covers "fetch this path's quests in order" as a single indexed scan
+    // (equality column first, sort column last) rather than a sort step —
+    // same indexing discipline as quest_submissions' covering index above.
+    index("path_quests_path_order_idx").on(table.pathId, table.orderIndex),
+  ],
+);
 
 export const submissionStatus = pgEnum("submission_status", [
   "submitted",
@@ -218,6 +283,17 @@ export const badges = pgTable(
   (table) => [unique("badges_user_slug_unique").on(table.userId, table.slug)],
 );
 
-export const questsRelations = relations(quests, ({ one }) => ({
+export const questsRelations = relations(quests, ({ one, many }) => ({
   author: one(user, { fields: [quests.authorId], references: [user.id] }),
+  pathQuests: many(pathQuests),
+}));
+
+export const pathsRelations = relations(paths, ({ one, many }) => ({
+  author: one(user, { fields: [paths.authorId], references: [user.id] }),
+  pathQuests: many(pathQuests),
+}));
+
+export const pathQuestsRelations = relations(pathQuests, ({ one }) => ({
+  path: one(paths, { fields: [pathQuests.pathId], references: [paths.id] }),
+  quest: one(quests, { fields: [pathQuests.questId], references: [quests.id] }),
 }));

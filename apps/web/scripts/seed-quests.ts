@@ -5,8 +5,9 @@
 // Run via `npm run db:seed-quests` — that script passes --env-file=.env.local
 // itself. Don't add an in-file dotenv import here; see the README/worker.ts
 // for why that ordering bug is a trap worth not repeating.
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../src/server/db";
-import { quests } from "../src/server/schema";
+import { paths, pathQuests, quests } from "../src/server/schema";
 
 async function main() {
   const khaled = await db.query.user.findFirst({ where: (u, { eq }) => eq(u.name, "khaled") });
@@ -20,6 +21,9 @@ async function main() {
       slug: "reverse-without-recursion",
       title: "Reverse Without Recursion",
       summary: "Reverse a singly linked list in place. No recursion, no extra list.",
+      // No in-house concept teaching, just the problem and constraints —
+      // pure by docs/MASTER_PLAN.md §1.5's definition, not a style left unchosen.
+      style: "pure" as const,
       difficulty: "easy" as const,
       tags: ["algorithms", "warmup"],
       points: 20,
@@ -60,6 +64,7 @@ An empty list and a single-node list should both come back correctly reversed, w
       title: "The Leaky Bucket",
       summary:
         "A small string-processing tool that leaks memory on every single call. Find it, fix it.",
+      style: "pure" as const,
       difficulty: "medium" as const,
       tags: ["systems", "c", "memory"],
       points: 80,
@@ -105,6 +110,11 @@ Find every allocation in this function (there's more than one), work out which o
       slug: "the-careless-counter",
       title: "The Careless Counter",
       summary: "Fourteen threads, one counter, zero synchronization. Guess what happens.",
+      // The one quest in this retrofit that actually earns "educational":
+      // the prompt explains the race-condition mechanism itself ("counter++
+      // is a read, an increment, and a write...") before the challenge, a
+      // real brief concept primer, not just problem framing.
+      style: "educational" as const,
       difficulty: "hard" as const,
       tags: ["systems", "c", "multithreading"],
       points: 150,
@@ -159,6 +169,7 @@ That last ThreadSanitizer point isn't optional flavor text — it's literally ho
       slug: "extract-failed-logins",
       title: "Extract the Failed Logins",
       summary: "Parse a simple log format and print just the usernames that failed to log in.",
+      style: "pure" as const,
       difficulty: "easy" as const,
       tags: ["bash", "text-processing", "foundations"],
       points: 30,
@@ -223,6 +234,10 @@ If nothing failed, print nothing.
       slug: "three-clean-commits",
       title: "Three Clean Commits",
       summary: "Shape your git history — exactly three commits, real messages, no merge noise.",
+      // Points externally to the Conventional Commits spec rather than
+      // teaching it in-house — that's the pure pattern (keyword pointer for
+      // external research), not an educational primer.
+      style: "pure" as const,
       difficulty: "easy" as const,
       tags: ["git", "foundations"],
       points: 30,
@@ -255,6 +270,7 @@ Unlike the C/C++ or Bash quests, nothing here runs or compiles — this one's gr
       slug: "containerize-it-right",
       title: "Containerize It Right",
       summary: "Write a Dockerfile that builds clean, runs as a real user, and stays small.",
+      style: "pure" as const,
       difficulty: "easy" as const,
       tags: ["docker", "foundations"],
       points: 40,
@@ -296,6 +312,7 @@ This one is graded by actually building your image in a locked down, network res
       slug: "tally-the-status-codes",
       title: "Tally the Status Codes",
       summary: "Count how often each HTTP status code shows up, sorted lowest to highest.",
+      style: "pure" as const,
       difficulty: "medium" as const,
       tags: ["bash", "text-processing", "foundations"],
       points: 45,
@@ -350,6 +367,7 @@ Write \`solution.sh\` that counts how many times each status code appears, then 
       slug: "group-the-sessions",
       title: "Group the Sessions",
       summary: "Parse blank-line-separated key=value blocks into one summary line per block.",
+      style: "pure" as const,
       difficulty: "hard" as const,
       tags: ["bash", "text-processing", "foundations"],
       points: 65,
@@ -406,6 +424,7 @@ bob 45 timeout
       slug: "no-giant-commits",
       title: "No Giant Commits",
       summary: "Break your work into at least four real commits instead of one that does everything.",
+      style: "pure" as const,
       difficulty: "medium" as const,
       tags: ["git", "foundations"],
       points: 35,
@@ -436,6 +455,7 @@ Graded by inspecting your actual \`git log\`, same as the other Git quests, noth
       slug: "scoped-and-squashed",
       title: "Scoped and Squashed",
       summary: "Squash down to five commits or fewer, each with a proper type(scope): message.",
+      style: "pure" as const,
       difficulty: "hard" as const,
       tags: ["git", "foundations"],
       points: 55,
@@ -468,6 +488,7 @@ As before, it doesn't matter what the commits actually change, write real, disti
       slug: "slim-it-down",
       title: "Slim It Down",
       summary: "Same rules as Containerize It Right, but the image has to stay under 50MB.",
+      style: "pure" as const,
       difficulty: "medium" as const,
       tags: ["docker", "foundations"],
       points: 45,
@@ -501,6 +522,7 @@ That number rules out a lot of default choices. A full Debian or Ubuntu base alo
       slug: "ship-it-with-a-healthcheck",
       title: "Ship It With a Healthcheck",
       summary: "A Dockerfile isn't production ready until something can ask it if it's alive.",
+      style: "pure" as const,
       difficulty: "hard" as const,
       tags: ["docker", "foundations"],
       points: 55,
@@ -540,6 +562,7 @@ Same non root, pinned tag, hadolint clean baseline as the other Docker quests, p
           title: quest.title,
           summary: quest.summary,
           difficulty: quest.difficulty,
+          style: quest.style,
           tags: quest.tags,
           points: quest.points,
           runner: quest.runner,
@@ -550,6 +573,77 @@ Same non root, pinned tag, hadolint clean baseline as the other Docker quests, p
       });
     console.log(`seeded: ${quest.slug}`);
   }
+
+  // The platform's first real Mastery Path (docs/MASTER_PLAN.md §1.5/§3.5)
+  // — organizes the 12 quests above rather than introducing new ones.
+  // Ordering is tier-interleaved across all four tracks (easy tier, then
+  // medium, then hard), not track-blocked (all of Git, then all of Bash,
+  // ...), per the interleaved-practice research cited in §1.5: spacing
+  // different skills within a sequence measurably beats block formats.
+  // Git leads every tier, matching §1's "flagship track, not filler"
+  // finding; C/C++ trails every tier, matching §1's framing of it as the
+  // platform's existing differentiator folded into this launch Path
+  // rather than a separate track.
+  const [{ id: pathId }] = await db
+    .insert(paths)
+    .values({
+      slug: "backend-engineering-foundations",
+      title: "Backend Engineering Foundations",
+      summary:
+        "Git, Bash/Linux, Docker, and systems C/C++ — the four tracks that make a backend dev competitive, in one curated sequence.",
+      status: "published",
+      authorId,
+    })
+    .onConflictDoUpdate({
+      target: paths.slug,
+      set: {
+        title: "Backend Engineering Foundations",
+        summary:
+          "Git, Bash/Linux, Docker, and systems C/C++ — the four tracks that make a backend dev competitive, in one curated sequence.",
+        status: "published",
+        updatedAt: new Date(),
+      },
+    })
+    .returning({ id: paths.id });
+
+  const pathOrder = [
+    "three-clean-commits",
+    "extract-failed-logins",
+    "containerize-it-right",
+    "reverse-without-recursion",
+    "no-giant-commits",
+    "tally-the-status-codes",
+    "slim-it-down",
+    "the-leaky-bucket",
+    "scoped-and-squashed",
+    "group-the-sessions",
+    "ship-it-with-a-healthcheck",
+    "the-careless-counter",
+  ];
+
+  const orderedQuests = await db.query.quests.findMany({ where: inArray(quests.slug, pathOrder) });
+  const questIdBySlug = new Map(orderedQuests.map((q) => [q.slug, q.id]));
+
+  // Delete-then-bulk-insert, not a per-row upsert keyed on (pathId, questId)
+  // alone: path_quests also has a unique constraint on (pathId, orderIndex),
+  // and reordering pathOrder (swapping two slugs, inserting one in the
+  // middle) would have a still-unprocessed row holding the orderIndex an
+  // earlier row is being updated to, tripping that second constraint — one
+  // ON CONFLICT target can't arbitrate both at once. Wrapped in a
+  // transaction so a mid-loop failure can't leave the path half-reordered.
+  await db.transaction(async (tx) => {
+    await tx.delete(pathQuests).where(eq(pathQuests.pathId, pathId));
+    await tx.insert(pathQuests).values(
+      pathOrder.map((slug, orderIndex) => {
+        const questId = questIdBySlug.get(slug);
+        if (!questId) {
+          throw new Error(`pathOrder references "${slug}", but no such quest was seeded above`);
+        }
+        return { pathId, questId, orderIndex };
+      }),
+    );
+  });
+  console.log(`seeded path: backend-engineering-foundations (${pathOrder.length} quests)`);
 
   process.exit(0);
 }
