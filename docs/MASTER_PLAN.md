@@ -688,11 +688,11 @@ design system rather than restyled later.*
 - [ ] Logo integrated: React components (themeable, `currentColor`) in
       navbar/auth screens, fixed-color favicon
 
-### Phase 7 — Quest Runner & Content Buildout
+### Phase 7 — Quest Runner & Content Buildout ✅ done
 *Why next: this is the actual product expansion — new grading architecture
 (§3) plus real content in the launch Path (§1), which needs a design
-system to land in and a safe pipeline to ship through (Phase 6). In
-progress — see `docs/TODO.md` for the granular breakdown.*
+system to land in and a safe pipeline to ship through (Phase 6). Closed
+2026-08-09 — see `docs/TODO.md` for the granular breakdown.*
 - [x] Quest runner abstraction: `judge.ts` orchestrates, all four runners
       (`sandbox-exec`, `io-match`, `git-assert`, `dockerfile-check`) now
       implemented as separate hardened runner modules, each with its own
@@ -713,20 +713,28 @@ progress — see `docs/TODO.md` for the granular breakdown.*
       (`three-clean-commits`, Git track)
 - [x] Backend Engineering Foundations content: every Foundations track now
       has 3 quests, matching parity, not proof points
-- [ ] Paths relational data model (§3.5): `paths` + `path_quests` join
+- [x] Paths relational data model (§3.5): `paths` + `path_quests` join
       table with a real `order_index`, plus a new `quests.style` enum
       (`educational`/`pure`). Built as a real normalized structure per
       explicit direction, not a lightweight shortcut, even at current
-      content volume
-- [ ] Retrofit existing quests with real `style` tags and organize them
-      into the platform's first actual Mastery Path (Backend Engineering
-      Foundations), applying §1.5's fade-across-the-sequence principle to
-      real content for the first time
-- [ ] Functional Paths browsing/filtering UI on `/quests`, replacing the
+      content volume. Pushed live and verified directly against Postgres
+- [x] Retrofit: all 12 existing quests read for their real style, not
+      defaulted or balanced artificially — 11 `pure`, 1 `educational`
+      (`the-careless-counter`, the only one with a genuine in-house
+      concept primer). Organized into the platform's first actual Mastery
+      Path (`backend-engineering-foundations`), ordered tier-interleaved
+      across all four tracks per §1.5's interleaved-practice citation,
+      not track-blocked — Git leads every tier, C/C++ trails every tier,
+      matching §1's framing of each
+- [x] Functional Paths browsing/filtering UI on `/quests`, replacing the
       tag-pill-only filter. Closes this phase at "works and is organized
       correctly," the same bar Phase 6 shipped at — the deeper research-led
       presentation pass for Educational/Pure and progression visualization
-      is its own phase (8), same relationship Phase 7.5 had to Phase 6
+      is its own phase (8), same relationship Phase 7.5 had to Phase 6.
+      Verified live in a real browser (not just a clean build): correct
+      order, the one `educational` quest visibly distinct, tag filter and
+      quest-detail links both intact. See decision 11 for a rendering
+      artifact investigated and ruled out as a real bug along the way
 
 **Resumed** — Phase 7.5 cleared its exit checklist (16/40 → 26/40,
 re-audit-verified). The remaining items above are back in play.
@@ -947,3 +955,21 @@ Formerly "open questions" — resolved:
     that scale needs real CRUD tooling, not a hand-edited seed script, and
     after Learning UI/UX (8) so new content is authored directly against
     the final presentation model instead of needing a later retrofit.
+11. **Phase 7 closed** (2026-08-09): the Paths schema (§3.5) shipped as
+    designed, all 12 existing quests retrofitted with a real `style`
+    value (11 `pure`, 1 `educational`, an honest empirical split, not
+    balanced for variety), organized into the first Mastery Path with a
+    tier-interleaved ordering, and a functional Paths browsing UI shipped
+    on `/quests`. One rendering artifact investigated during browser
+    verification and ruled out as a real defect: hard/direct URL
+    navigation via the browser-automation tool intermittently left a
+    stuck `InvalidStateError: Transition was aborted` from React's
+    `<ViewTransition>` wrapper, which visually looked like most quests
+    missing from a screenshot. Confirmed not a real bug two ways: direct
+    DOM inspection showed all 12 items at `opacity: 1` with correct
+    layout the whole time, and the identical stuck-overlay artifact
+    reproduced on the untouched home Activity feed page, which nothing in
+    this work touched. Real in-app `Link` navigation (the actual user
+    path, not a hard reload) never showed it. All four Foundations
+    runners, 12 quests across 4 tracks, and a real Paths structure now
+    exist — Phase 8 (Learning UI/UX) is next.

@@ -252,25 +252,65 @@ decisions that haven't been made yet.
       one message-format failure specifically) against its exact seeded
       `runnerSpec`, pulled from the real database, not a hand-copied
       approximation of it.
-- [ ] Paths relational schema (`docs/MASTER_PLAN.md` §3.5): new `paths`
+- [x] Paths relational schema (`docs/MASTER_PLAN.md` §3.5): new `paths`
       table (slug/title/summary/status/authorId), new `path_quests` join
       table (`pathId`, `questId`, `orderIndex`, unique on both
       `(pathId, questId)` and `(pathId, orderIndex)`, indexed on
       `(pathId, orderIndex)`), new `quests.style` enum
-      (`"educational" | "pure"`). Real normalized structure per explicit
-      direction, not a lightweight `pathSlug` shortcut, even at current
-      content volume — see §3.5 for the full reasoning
-- [ ] Retrofit all 12 existing quests with a real `style` tag (no implicit
-      default left unchosen), and organize them into the platform's first
-      real Mastery Path (Backend Engineering Foundations), applying the
-      fade-across-the-sequence principle (§1.5) to real content
-- [ ] Functional Paths browsing/filtering UI on `/quests`, replacing the
-      tag-pill-only filter — "works and is organized correctly," not the
-      deeper presentation/progression design pass, that's Phase 8
+      (`"educational" | "pure"`, defaults to `"pure"` only so `db:push`
+      doesn't need an interactive per-row prompt — every existing quest
+      gets an explicit, deliberately-chosen value in the retrofit below,
+      not left to the default). Pushed live via `drizzle-kit push`
+      (this project's schema-push workflow, no separate migration file to
+      track), verified directly against Postgres (`\d paths`/`\d
+      path_quests`/`\d quests`), not just "the push command exited 0"
+- [x] Retrofit: every one of the 12 existing quests actually read for its
+      real style, not defaulted or guessed for balance. Result: 11 `pure`,
+      1 `educational` (`the-careless-counter` — its prompt explains the
+      race-condition mechanism itself, "counter++ is a read, an
+      increment, and a write...", a real concept primer before the
+      challenge; none of the other 11 do, they frame the problem or point
+      externally, which is `pure` by definition, not `educational`). An
+      honest empirical finding, not force-fit for variety — genuinely
+      `educational` content is a gap for future authoring (Phase 11), not
+      something to manufacture retroactively
+- [x] First real Mastery Path seeded: `backend-engineering-foundations`,
+      all 12 quests, ordered **tier-interleaved across all four tracks**
+      (every easy quest, then every medium, then every hard) rather than
+      track-blocked (all of Git, then all of Bash, ...) — per §1.5's
+      interleaved-practice research citation, spacing different skills
+      within a sequence measurably beats block formats. Git leads every
+      tier (§1's "flagship track, not filler" finding), C/C++ trails
+      every tier (§1's framing as the existing differentiator folded into
+      this launch Path). Verified idempotent: re-running
+      `db:seed-quests` twice left `path_quests` at exactly 12 rows both
+      times
+- [x] Functional Paths browsing UI on `/quests`: the path renders as an
+      ordered, numbered list (sequence matters, unlike a browsable grid),
+      any quest not in a published path renders in a "Standalone" grid
+      below it (currently empty — all 12 quests are in the one path —
+      the code path is real and exercised by the empty-state branch, not
+      unreachable). Tag filtering kept, now scoped across both the path
+      list and the standalone grid. Verified live in a real browser, not
+      just `tsc`/build: all 12 quests render in the correct tier-
+      interleaved order, the one `educational` quest is visibly
+      distinguishable from the 11 `pure` ones, tag filtering and the
+      quest-detail link both still work. One real finding along the way
+      that turned out not to be a product bug: hard/direct URL
+      navigation via the browser-automation tool intermittently left a
+      stale `InvalidStateError: Transition was aborted` from React's
+      `<ViewTransition>` wrapper, which visually looked like missing
+      quests in a screenshot — ruled out as a real defect by confirming
+      the DOM had all 12 items at `opacity: 1` via direct inspection,
+      and by reproducing the identical stuck-overlay artifact on the
+      untouched home Activity feed page; real in-app `Link` clicks (the
+      actual user path) never showed it
 
-**Resumed.** Phase 7.5 is done (16/40 → 26/40, re-audit-verified, see
-below) — the remaining items above are back in play, next up whenever
-this phase's work continues.
+**Phase 7 closed** (2026-08-09) — quest runner engine (all four runners),
+Backend Engineering Foundations content (12 quests across 4 tracks), and
+a real Paths structure (schema + first Mastery Path + browsing UI) all
+shipped. Phase 7.5 is done too (16/40 → 26/40, re-audit-verified, see
+below). Phase 8 (Learning UI/UX) is next.
 
 ---
 
