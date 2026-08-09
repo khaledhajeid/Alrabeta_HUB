@@ -806,6 +806,60 @@ principle already applied once this project (decision 9). Closed out
       before closing, not just a changelog taken on faith, see decision
       12 for detail. Score: 30/40 → ~38/40 post-fix
 
+### Phase 8.5 — Paths Information Architecture & Home Redesign
+*Inserted 2026-08-09 (decision 13), same relationship to Phase 8 that 7.5
+had to Phase 6 and Phase 8 had to Phase 7: a research-grounded UI pass
+triggered by direct user critique of what Phase 8 shipped, not a new
+feature so much as finishing what "Learning UI/UX" was actually supposed
+to mean. Phase 8 solved the quest-detail half of that phase (Educational/
+Pure, the per-path progression stepper) but never touched the top-level
+browsing structure, which is where the "does this feel like a curated
+curriculum" complaint actually lives. Root cause identified during
+critique: the data model has only two tiers (`paths` -> `quests`), so
+"Backend Engineering Foundations" is one flat, tier-interleaved sequence
+with no queryable notion of "Git track" vs "Bash track" at all, no page
+redesign fixes that without a schema change underneath it first.*
+
+**Content model** (decision 13): a real third tier, `tracks`, between
+`paths` and `quests`. `paths` becomes the top-level category ("Backend
+Engineering Foundations"), each `track` is a single-skill ordered quest
+sequence (Git, Bash/Linux, Docker, C/C++) belonging to exactly one path,
+matching the Path -> Track -> Module hierarchy Codecademy and Pluralsight
+both already use in production, not an invented shape. Built as a real
+normalized structure per this project's standing "no lightweight
+workaround" convention (§3.5's Paths schema, decision 10's re-affirmation
+of it), not a client-side grouping of the existing `tags` column. The
+existing tier-interleaved cross-track ordering (§1.5/decision 9) is no
+longer needed once quests are grouped into single-skill tracks: a track
+is naturally difficulty-ordered within one skill, and the interleaved-
+practice benefit instead comes from a learner choosing to bounce between
+track pages at the category level, which is arguably a more honest
+application of that research than forcing interleaving into one flat list.
+
+- [ ] `tracks` table + migration: `paths` (unchanged, now the category
+      tier) -> `tracks` (new) -> `quests` (via a `track_id` replacing or
+      supplementing `path_quests`, exact shape TBD in the shape pass below)
+- [ ] Re-cut `backend-engineering-foundations`'s 12 quests into 4 real
+      tracks (Git/Bash/Docker/C-C++), each internally difficulty-ordered
+- [ ] `/impeccable shape` for the Paths hub: category cards -> track cards
+      (icon, quest count, per-track progress) -> track detail (the
+      existing Phase 8 stepper, now against a real single-skill sequence
+      instead of a flattened 12-item list)
+- [ ] `/impeccable shape` for the Home dashboard: replaces the raw Forgejo
+      activity-log homepage with progress across active paths/tracks,
+      points/rank, a continue-where-you-left-off card, and Daily/
+      Standalone quests; activity feed demotes to a secondary module or
+      its own `/activity` route, not the entire homepage
+- [ ] Nav/logo pass: the icon mark is illegible at 28px nav scale (dense
+      internal detail that only resolves zoomed in, unlike Linear's/
+      Vercel's single-geometric-move marks); nav shell itself is flat
+      with a hard border, no blur-on-scroll or elevation, undercutting
+      the Vercel/Linear/Raycast register the rest of the system already
+      commits to
+- [ ] `craft` each shaped surface once its plan is signed off
+- [ ] Exit gate: same dual-agent `/impeccable critique` methodology
+      Phase 8 used, not a changelog taken on faith
+
 ### Phase 9 — Gamification Expansion *(was Phase 8)*
 - [ ] Two-currency system (points/rank, spendable shop currency)
 - [ ] Streaks, computed off submission history
@@ -1012,3 +1066,20 @@ Formerly "open questions" — resolved:
     faith. All four Foundations runners, 12 quests, a real Paths
     structure, and the Educational/Pure plus progression UI now exist,
     Phase 9 (Gamification Expansion) is next.
+13. **Phase 8.5 inserted** (2026-08-09), direct user critique of the
+    shipped Phase 8 UI: the Paths page reads as a flat numbered list, not
+    a curated curriculum, and the nav/logo don't carry the premium feel
+    the rest of the design system commits to. Root cause traced to the
+    data model, not the UI: `paths` to `quests` is only two tiers, so
+    there is no queryable "Git track" versus "Bash track", only informal
+    `tags` strings on individual quests. Decision: add a real third tier,
+    `tracks`, between `paths` and `quests`, matching the Path/Track/
+    Module hierarchy Codecademy and Pluralsight both already use in
+    production rather than inventing a shape from scratch. Sequenced as
+    an insertion ahead of Phase 9 (mirroring how 7.5 was inserted ahead
+    of Phase 7), not folded back into the now-closed, already-scored
+    Phase 8. Planned execution: `/impeccable shape` per surface (Paths
+    hub, then Home dashboard), a targeted nav/logo pass, `craft` once
+    each plan is signed off, and the same dual-agent `/impeccable
+    critique` exit gate the last two UI phases used. Full rationale in
+    the Phase 8.5 section above.

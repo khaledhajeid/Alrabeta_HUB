@@ -589,6 +589,38 @@ the full rationale. Closed out 2026-08-09.*
 
 ---
 
+## Phase 8.5 — Paths Information Architecture & Home Redesign
+
+*Inserted 2026-08-09, triggered by direct user critique of the shipped
+Phase 8 UI. See `docs/MASTER_PLAN.md`'s Phase 8.5 entry and decision 13
+for the full rationale (root cause: `paths` to `quests` is only two data
+tiers, so there is no queryable "Git track" vs "Bash track", only
+informal tags).*
+
+- [ ] `tracks` table + migration: `paths` (category tier, unchanged) then
+      `tracks` (new) then `quests`, replacing or supplementing
+      `path_quests` with a track-scoped join, exact shape decided in the
+      shape pass below
+- [ ] Re-cut `backend-engineering-foundations`'s 12 quests into 4 real
+      tracks (Git, Bash/Linux, Docker, C/C++), each internally
+      difficulty-ordered, dropping the now-unnecessary cross-track
+      interleaving
+- [ ] `/impeccable shape` for the Paths hub: category cards, track cards
+      (icon, quest count, per-track progress), track detail (the
+      existing Phase 8 stepper against a real single-skill sequence)
+- [ ] `/impeccable shape` for the Home dashboard: progress across active
+      paths/tracks, points/rank, continue-where-you-left-off, Daily/
+      Standalone quests; activity feed demotes to a secondary module or
+      its own `/activity` route
+- [ ] Nav/logo pass: icon mark illegible at 28px nav scale, nav shell
+      lacks elevation/blur-on-scroll relative to the Vercel/Linear/
+      Raycast register the rest of the system commits to
+- [ ] `craft` each shaped surface once its plan is signed off
+- [ ] Exit gate: same dual-agent `/impeccable critique` methodology
+      Phase 8 used
+
+---
+
 ## Phase 9 — Gamification Expansion *(was Phase 8)*
 
 - [ ] Design the two-currency model (permanent points/rank vs. spendable
