@@ -230,9 +230,26 @@ decisions that haven't been made yet.
       redirecting from that instead of a variable; covered going forward
       by a dedicated `fixtures/multiline-stdin.sh` fixture. See the
       runner's README for the full writeup.
-- [ ] Author more Foundations content beyond the runner-backed quests that
-      already exist (io-match's Bash quest, git-assert's, dockerfile-check's)
-      — enough per track to be a real launch surface, not proof points
+- [x] Content buildout: every Foundations track now has 3 quests,
+      matching C/C++'s existing depth, instead of the single proof point
+      each of Bash/Git/Docker had before. New quests: `tally-the-status-codes`
+      (medium, io-match, aggregation over per-line filtering), `group-the-sessions`
+      (hard, io-match, stateful multi-line parsing with `declare -A`),
+      `no-giant-commits` (medium, git-assert, first real use of
+      `commit-count`'s `min` op, only `eq` had been fixture-tested before),
+      `scoped-and-squashed` (hard, git-assert, `max` op plus a stricter
+      `type(scope): message` pattern), `slim-it-down` (medium,
+      dockerfile-check, a 50MB cap instead of 200MB), `ship-it-with-a-healthcheck`
+      (hard, dockerfile-check, `has-healthcheck` as the headline
+      assertion). Writing `group-the-sessions`' reference solution is what
+      surfaced the `io-match` trailing-newline bugfix above, and building
+      `ship-it-with-a-healthcheck` is what surfaced the `dockerfile-check`
+      `has-healthcheck` bugfix, both real correctness issues found by
+      building content, not by auditing the runners directly. Every new
+      quest validated pass and fail (and for the two git-assert quests,
+      one message-format failure specifically) against its exact seeded
+      `runnerSpec`, pulled from the real database, not a hand-copied
+      approximation of it.
 - [ ] Paths as a real browsing/filtering structure on `/quests`, not just
       a tag pill
 

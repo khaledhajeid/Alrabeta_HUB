@@ -292,6 +292,242 @@ Your \`Dockerfile\` needs to:
 
 This one is graded by actually building your image in a locked down, network restricted sandbox and inspecting the result, plus a static lint pass, not by a human skimming your Dockerfile.`,
     },
+    {
+      slug: "tally-the-status-codes",
+      title: "Tally the Status Codes",
+      summary: "Count how often each HTTP status code shows up, sorted lowest to highest.",
+      difficulty: "medium" as const,
+      tags: ["bash", "text-processing", "foundations"],
+      points: 45,
+      runner: "io-match" as const,
+      runnerSpec: {
+        entryFile: "solution.sh",
+        cases: [
+          {
+            name: "mixed status codes",
+            stdin:
+              "GET /home 200\nGET /missing 404\nPOST /login 200\nGET /error 500\nGET /home 200",
+            expected_stdout: "200 3\n404 1\n500 1",
+          },
+          {
+            name: "single line",
+            stdin: "GET /ok 200",
+            expected_stdout: "200 1",
+          },
+        ],
+      },
+      promptMarkdown: `A step up from the last one: this time you're aggregating, not just filtering.
+
+## The setup
+
+Log lines on stdin, one per line, always ending in a status code as the last field:
+
+\`\`\`
+GET /home 200
+GET /missing 404
+POST /login 200
+GET /error 500
+GET /home 200
+\`\`\`
+
+## What to do
+
+Write \`solution.sh\` that counts how many times each status code appears, then prints one line per distinct code as \`CODE COUNT\`, sorted numerically by code, ascending. For the example above:
+
+\`\`\`
+200 3
+404 1
+500 1
+\`\`\`
+
+## What "done" looks like
+
+- One line per distinct status code, sorted ascending by code, exact format \`CODE COUNT\` separated by a single space.
+- No dependency beyond stock \`bash\` and standard POSIX utilities (\`awk\`, \`sort\`, \`uniq\` are all fair game, this one is genuinely awkward without them).
+- Handles a single-line input correctly, not just multi-line ones.`,
+    },
+    {
+      slug: "group-the-sessions",
+      title: "Group the Sessions",
+      summary: "Parse blank-line-separated key=value blocks into one summary line per block.",
+      difficulty: "hard" as const,
+      tags: ["bash", "text-processing", "foundations"],
+      points: 65,
+      runner: "io-match" as const,
+      runnerSpec: {
+        entryFile: "solution.sh",
+        cases: [
+          {
+            name: "two sessions",
+            stdin:
+              "user=alice\nduration=120\nstatus=ok\n\nuser=bob\nstatus=timeout\nduration=45\n",
+            expected_stdout: "alice 120 ok\nbob 45 timeout",
+          },
+          {
+            name: "single session, no trailing blank line",
+            stdin: "user=carol\nduration=10\nstatus=ok\n",
+            expected_stdout: "carol 10 ok",
+          },
+        ],
+      },
+      promptMarkdown: `The hardest of the Bash Foundations quests so far: real state tracking across multiple lines, not a single pass over independent ones.
+
+## The setup
+
+stdin holds a series of session records. Each record is a few \`key=value\` lines, always exactly \`user\`, \`duration\`, and \`status\`, in no particular order, and records are separated by a single blank line:
+
+\`\`\`
+user=alice
+duration=120
+status=ok
+
+user=bob
+status=timeout
+duration=45
+\`\`\`
+
+## What to do
+
+Write \`solution.sh\` that prints one line per session, in the order the sessions appeared, formatted as \`USER DURATION STATUS\` (that field order, regardless of what order the keys appeared in the input). For the example above:
+
+\`\`\`
+alice 120 ok
+bob 45 timeout
+\`\`\`
+
+## What "done" looks like
+
+- One output line per input session, in input order, exact \`USER DURATION STATUS\` format.
+- Handles a trailing blank line between sessions or none at all, the very last session in the input might not be followed by one.
+- Handles the keys arriving in any order within a block, don't assume \`user\` always comes first.
+- No dependency beyond stock \`bash\`. Associative arrays (\`declare -A\`) are exactly the right tool here.`,
+    },
+    {
+      slug: "no-giant-commits",
+      title: "No Giant Commits",
+      summary: "Break your work into at least four real commits instead of one that does everything.",
+      difficulty: "medium" as const,
+      tags: ["git", "foundations"],
+      points: 35,
+      runner: "git-assert" as const,
+      runnerSpec: {
+        baseRef: "main",
+        assertions: [
+          { type: "no-merge-commits" },
+          { type: "commit-count", op: "min", value: 4 },
+        ],
+      },
+      promptMarkdown: `The opposite failure mode from "Three Clean Commits": instead of a messy trail of "wip" commits, this is the one giant commit that changes twelve files and calls itself "updates". Reviewers hate both.
+
+## What to do
+
+Make **at least four commits** on top of \`main\`, no merge commits in the branch. It doesn't matter what they do or exactly how you word them, this quest is graded purely on commit count and history shape, not message format or file contents. What matters is that the work is actually broken up: each commit should be a real, self-contained step, not a rebase trick to inflate the count.
+
+If you pick up changes from \`main\` along the way, \`rebase\`, don't \`merge\`.
+
+## What "done" looks like
+
+- At least 4 commits ahead of \`main\`.
+- No merge commits anywhere in the branch.
+
+Graded by inspecting your actual \`git log\`, same as the other Git quests, nothing here runs or compiles.`,
+    },
+    {
+      slug: "scoped-and-squashed",
+      title: "Scoped and Squashed",
+      summary: "Squash down to five commits or fewer, each with a proper type(scope): message.",
+      difficulty: "hard" as const,
+      tags: ["git", "foundations"],
+      points: 55,
+      runner: "git-assert" as const,
+      runnerSpec: {
+        baseRef: "main",
+        assertions: [
+          { type: "no-merge-commits" },
+          { type: "commit-count", op: "max", value: 5 },
+          { type: "commit-message-matches", pattern: "^(feat|fix|docs|refactor|chore)\\([a-z0-9-]+\\): .+" },
+        ],
+      },
+      promptMarkdown: `The other direction from "No Giant Commits": now you've got a branch with a real history, and the job is to tighten it before it's reviewable, without losing the shape of the work.
+
+## What to do
+
+Get your branch down to **five commits or fewer** ahead of \`main\`, no merges, and every single commit message needs a **scope**, not just a bare Conventional Commits type. That means \`feat(auth): add token refresh\`, not \`feat: add token refresh\`, and definitely not \`feat: stuff\`.
+
+The exact pattern each message needs to match: \`type(scope): description\`, where \`type\` is one of \`feat\`, \`fix\`, \`docs\`, \`refactor\`, or \`chore\`, \`scope\` is lowercase letters, digits, or hyphens, and \`description\` is a real sentence fragment, not empty.
+
+As before, it doesn't matter what the commits actually change, write real, distinct commits about whatever you like, this is graded on history shape and message format, not file contents. \`rebase -i\` is the tool for this, not \`git reset --soft\` and one big recommit, though either gets you to a valid end state.
+
+## What "done" looks like
+
+- 5 or fewer commits ahead of \`main\`.
+- No merge commits anywhere in the branch.
+- Every commit message matches \`type(scope): description\`, scope included, every time.`,
+    },
+    {
+      slug: "slim-it-down",
+      title: "Slim It Down",
+      summary: "Same rules as Containerize It Right, but the image has to stay under 50MB.",
+      difficulty: "medium" as const,
+      tags: ["docker", "foundations"],
+      points: 45,
+      runner: "dockerfile-check" as const,
+      runnerSpec: {
+        assertions: [
+          { type: "builds-successfully" },
+          { type: "runs-as-non-root" },
+          { type: "no-latest-tag" },
+          { type: "image-size-under", megabytes: 50 },
+          { type: "hadolint-clean" },
+        ],
+      },
+      promptMarkdown: `"Containerize It Right" set a 200MB ceiling, generous enough that almost any reasonable base image clears it without much thought. This one doesn't give you that room.
+
+## What to do
+
+Same core requirements as before: a \`Dockerfile\` at the repo root, builds cleanly, pins a real base tag, runs as a non root user, hadolint clean. The difference is the size budget: **under 50MB**, total.
+
+That number rules out a lot of default choices. A full Debian or Ubuntu base alone is usually already past it once you add anything on top. Getting under 50MB means actually thinking about what your base image needs to contain, and probably means reaching for something built for exactly this (a slim or alpine variant, or trimming what you install to the bare minimum your one script actually needs).
+
+## What "done" looks like
+
+- \`docker build\` succeeds against your repo as is.
+- The built image's \`USER\` is set to something other than root.
+- The \`FROM\` line names a real, non \`latest\` tag.
+- The image comes in under 50MB.
+- hadolint reports zero findings.`,
+    },
+    {
+      slug: "ship-it-with-a-healthcheck",
+      title: "Ship It With a Healthcheck",
+      summary: "A Dockerfile isn't production ready until something can ask it if it's alive.",
+      difficulty: "hard" as const,
+      tags: ["docker", "foundations"],
+      points: 55,
+      runner: "dockerfile-check" as const,
+      runnerSpec: {
+        assertions: [
+          { type: "builds-successfully" },
+          { type: "runs-as-non-root" },
+          { type: "no-latest-tag" },
+          { type: "has-healthcheck" },
+          { type: "hadolint-clean" },
+        ],
+      },
+      promptMarkdown: `Every quest so far has asked "does it build cleanly." This one asks a different question: once it's running, how would anything else know?
+
+## What to do
+
+Same non root, pinned tag, hadolint clean baseline as the other Docker quests, plus one new requirement: a real \`HEALTHCHECK\` instruction. It needs to actually check something meaningful, running your container's own entrypoint script (or an equivalent real command) counts, a hardcoded \`CMD ["true"]\` that always succeeds regardless of anything technically satisfies the instruction but misses the point entirely.
+
+## What "done" looks like
+
+- \`docker build\` succeeds against your repo as is.
+- The built image's \`USER\` is set to something other than root.
+- The \`FROM\` line names a real, non \`latest\` tag.
+- The built image has a \`HEALTHCHECK\` set.
+- hadolint reports zero findings.`,
+    },
   ];
 
   for (const quest of seedQuests) {
