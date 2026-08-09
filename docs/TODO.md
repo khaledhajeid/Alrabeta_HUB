@@ -206,9 +206,20 @@ decisions that haven't been made yet.
 - [x] Seeded a real quest: `three-clean-commits` (Git track, Foundations,
       30pts) — "shape your history into exactly three Conventional-Commits
       commits, no merges"
-- [ ] Author more Foundations content beyond the two runner-backed quests
-      (io-match's Bash quest, git-assert's) — enough per track to be a
-      real launch surface, not proof points
+- [x] `io-match` bugfix: `runner.sh` fed submitted scripts' stdin through
+      a bash variable (`STDIN=$(jq -r '.stdin')`), and command
+      substitution unconditionally strips trailing newlines, so a
+      perfectly correct submission using `while read` would silently lose
+      its last input line whenever a case's stdin ended with one. Found
+      while writing a fixture for a new quest, not in production, but the
+      already-live `extract-failed-logins` quest runs through the exact
+      same code path. Fixed by writing stdin to a file with `jq -j` and
+      redirecting from that instead of a variable; covered going forward
+      by a dedicated `fixtures/multiline-stdin.sh` fixture. See the
+      runner's README for the full writeup.
+- [ ] Author more Foundations content beyond the runner-backed quests that
+      already exist (io-match's Bash quest, git-assert's, dockerfile-check's)
+      — enough per track to be a real launch surface, not proof points
 - [ ] Paths as a real browsing/filtering structure on `/quests`, not just
       a tag pill
 

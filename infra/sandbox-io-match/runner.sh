@@ -42,13 +42,22 @@ CASE_COUNT=$(jq 'length' "$CASES")
 for i in $(seq 0 $((CASE_COUNT - 1))); do
   CASE=$(jq -c ".[$i]" "$CASES")
   NAME=$(echo "$CASE" | jq -r '.name // "case \($ARGS.positional[0])"' --args "$i")
-  STDIN=$(echo "$CASE" | jq -r '.stdin // ""')
   EXPECTED=$(echo "$CASE" | jq -r '.expected_stdout // ""')
   # readarray keeps each arg intact even if it contains spaces.
   readarray -t ARGS_ARR < <(echo "$CASE" | jq -r '.args // [] | .[]')
 
-  ACTUAL=$(printf '%s' "$STDIN" | timeout "$TIMEOUT_SECS" "$INTERPRETER" "$SCRIPT" "${ARGS_ARR[@]}" 2>/dev/null)
+  # stdin has to go through a file, not a bash variable: `$(...)` command
+  # substitution unconditionally strips every trailing newline, which
+  # would silently drop the last line of any submitted script using a
+  # `while read` loop over a stdin whose last record ends with a blank
+  # line (found while writing a session-grouping quest fixture, not
+  # assumed). `jq -j` (join output, adds no newline of its own) writes the
+  # exact bytes from the JSON string, trailing newlines included.
+  STDIN_FILE=$(mktemp)
+  echo "$CASE" | jq -j '.stdin // ""' >"$STDIN_FILE"
+  ACTUAL=$(timeout "$TIMEOUT_SECS" "$INTERPRETER" "$SCRIPT" "${ARGS_ARR[@]}" <"$STDIN_FILE" 2>/dev/null)
   EXIT_CODE=$?
+  rm -f "$STDIN_FILE"
 
   # A case killed by the timeout (124) or any other signal is a fail, not a
   # pass with an empty diff — same fail-safe-not-fail-open principle as
