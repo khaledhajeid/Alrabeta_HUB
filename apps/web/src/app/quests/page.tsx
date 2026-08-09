@@ -1,9 +1,13 @@
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
+import { headers } from "next/headers";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { paths, quests } from "@/server/schema";
+import { paths, quests, questSubmissions } from "@/server/schema";
 import { TagPill } from "@/components/tag-pill";
 import { TagFilterSelect } from "@/components/tag-filter-select";
+import { QuestStyleBadge } from "@/components/quest-style-badge";
+import { PathStepDot } from "@/components/path-step-dot";
 
 // Phase 7.5.G: past this many, the pill row itself becomes more complex
 // than the content it filters — collapse to a select instead.
@@ -15,6 +19,8 @@ export default async function QuestsPage({
   searchParams: Promise<{ tag?: string }>;
 }) {
   const { tag } = await searchParams;
+
+  const session = await auth.api.getSession({ headers: await headers() });
 
   // Phase 7 close-out (docs/MASTER_PLAN.md §3.5): a real Paths structure,
   // not just a tag pill. A path's own quests come back pre-ordered
@@ -49,6 +55,40 @@ export default async function QuestsPage({
     publishedPaths.flatMap((p) => p.pathQuests.map((pq) => pq.questId)),
   );
   const standalone = allPublished.filter((q) => !pathQuestIds.has(q.id));
+
+  // Phase 8: "current position" is real progress, not just implied by list
+  // order — the first not-yet-passed step in each path, derived from the
+  // signed-in user's own submission history. Signed-out visitors still see
+  // the sequence and its difficulty fade, just no passed/current state.
+  const passedQuestIds = new Set<string>(
+    session && pathQuestIds.size > 0
+      ? (
+          await db.query.questSubmissions.findMany({
+            where: and(
+              eq(questSubmissions.userId, session.user.id),
+              eq(questSubmissions.status, "passed"),
+              inArray(questSubmissions.questId, [...pathQuestIds]),
+            ),
+            columns: { questId: true },
+          })
+        ).map((s) => s.questId)
+      : [],
+  );
+
+  // Computed against each path's full, untagged-filtered order — a tag
+  // filter narrowing which rows are visible shouldn't change what "current"
+  // means for the path as a whole. Gated on session: with no signed-in
+  // user there's no real progress to mark "current" against, and the ring
+  // rendering on quest 1 regardless would read as personalized tracking
+  // that isn't actually happening (Phase 8 audit finding).
+  const currentQuestIdByPath = new Map(
+    session
+      ? publishedPaths.map((p) => [
+          p.id,
+          p.pathQuests.find((pq) => !passedQuestIds.has(pq.questId))?.questId,
+        ])
+      : [],
+  );
 
   const visiblePaths = publishedPaths
     .map((p) => ({ ...p, pathQuests: p.pathQuests.filter((pq) => matchesTag(pq.quest.tags)) }))
@@ -105,15 +145,19 @@ export default async function QuestsPage({
               <h2 className="text-base font-semibold text-text">{path.title}</h2>
               <p className="mt-1 text-sm text-text-muted">{path.summary}</p>
               <ol className="reveal-list mt-4 flex flex-col gap-2">
-                {path.pathQuests.map(({ quest, orderIndex }) => (
-                  <li key={quest.id}>
+                {path.pathQuests.map(({ quest, orderIndex }, i) => (
+                  <li key={quest.id} className="flex items-stretch gap-3">
+                    <PathStepDot
+                      position={orderIndex + 1}
+                      difficulty={quest.difficulty}
+                      passed={passedQuestIds.has(quest.id)}
+                      current={currentQuestIdByPath.get(path.id) === quest.id}
+                      isLast={i === path.pathQuests.length - 1}
+                    />
                     <Link
                       href={`/quests/${quest.slug}`}
-                      className="flex items-center gap-4 rounded-lg bg-surface p-4 shadow-resting transition-[box-shadow,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:-translate-y-0.5 hover:shadow-raised"
+                      className="flex flex-1 items-center gap-4 rounded-lg bg-surface p-4 shadow-resting transition-[box-shadow,transform] duration-(--motion-fast) ease-(--ease-out-quint) hover:-translate-y-0.5 hover:shadow-raised"
                     >
-                      <span className="w-6 shrink-0 text-right font-mono text-xs text-text-muted">
-                        {orderIndex + 1}
-                      </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">
                           <h3 className="text-sm leading-snug font-semibold text-text">{quest.title}</h3>
@@ -123,9 +167,8 @@ export default async function QuestsPage({
                         </div>
                         <p className="mt-1 line-clamp-1 text-sm text-text-muted">{quest.summary}</p>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-xs text-text-muted">
-                            {quest.difficulty} · {quest.style}
-                          </span>
+                          <span className="font-mono text-xs text-text-muted">{quest.difficulty}</span>
+                          <QuestStyleBadge style={quest.style} />
                           {quest.tags.map((t) => (
                             <TagPill key={t} tag={t} />
                           ))}
@@ -159,9 +202,8 @@ export default async function QuestsPage({
                     </div>
                     <p className="line-clamp-2 text-sm text-text-muted">{quest.summary}</p>
                     <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
-                      <span className="font-mono text-xs text-text-muted">
-                        {quest.difficulty} · {quest.style}
-                      </span>
+                      <span className="font-mono text-xs text-text-muted">{quest.difficulty}</span>
+                      <QuestStyleBadge style={quest.style} />
                       {quest.tags.map((t) => (
                         <TagPill key={t} tag={t} />
                       ))}

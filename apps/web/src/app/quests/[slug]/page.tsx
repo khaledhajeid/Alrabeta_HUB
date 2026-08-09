@@ -6,6 +6,9 @@ import { db } from "@/server/db";
 import { quests, questSubmissions, badges } from "@/server/schema";
 import { TagPill } from "@/components/tag-pill";
 import { QuestMarkdown } from "@/components/quest-markdown";
+import { QuestPrimer } from "@/components/quest-primer";
+import { ResearchHints } from "@/components/research-hints";
+import { QuestStyleBadge } from "@/components/quest-style-badge";
 import { BadgePill } from "@/components/badge-pill";
 import { SubmissionStatus } from "@/components/submission-status";
 import { TAG_TO_BADGE_SLUG } from "@/lib/badge-info";
@@ -67,8 +70,11 @@ export default async function QuestDetailPage({
           <TagPill key={t} tag={t} />
         ))}
       </div>
-      <p className="mt-1.5 text-sm text-text-muted">
-        {quest.points} pts · by {quest.author?.name ?? "unknown"}
+      <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+        <span>
+          {quest.points} pts · by {quest.author?.name ?? "unknown"}
+        </span>
+        <QuestStyleBadge style={quest.style} />
       </p>
       {/* Shown before the quest is ever solved — the badge system used to
           be invisible until you'd already earned one blindly. */}
@@ -82,7 +88,13 @@ export default async function QuestDetailPage({
           submit instructions, and submission history all share the same
           measure rather than the width jumping partway down the page. */}
       <div className="mt-8 max-w-[70ch]">
+        {quest.style === "educational" && quest.primerMarkdown && (
+          <QuestPrimer markdown={quest.primerMarkdown} />
+        )}
+
         <QuestMarkdown markdown={quest.promptMarkdown} />
+
+        {quest.style === "pure" && <ResearchHints keywords={quest.researchKeywords} />}
 
         <div className="mt-10 rounded-lg bg-surface p-5 shadow-resting">
           <h2 className="font-mono text-sm font-semibold text-text">How to submit</h2>

@@ -771,7 +771,7 @@ by a re-run `/impeccable critique` before it's considered done. Closed out
       (16/40 → 26/40, independently verified live), `DESIGN.md` rewritten
       to v2
 
-### Phase 8 — Learning UI/UX
+### Phase 8 — Learning UI/UX ✅ done
 *New, inserted 2026-08-09 (decision 10). Same relationship to Phase 7 that
 7.5 had to Phase 6: Phase 7 closes with a functionally correct Paths UI,
 this phase is the deeper, research-led craft pass on top of it, gated by
@@ -780,20 +780,31 @@ plausibly by an `/impeccable critique`-style audit as the exit gate, same
 methodology as 7.5 used to close. Needs at least one real, styled,
 ordered Mastery Path to design against (Phase 7's retrofit work), not
 placeholder content — the same "don't build UI for an empty catalog"
-principle already applied once this project (decision 9).*
-- [ ] Research: visual patterns for learning-curve/progression
-      visualization, path-completion state, and hint presentation on
-      comparable platforms, before designing anything (context7/firecrawl,
-      same tooling 7.5's benchmark research used)
-- [ ] Design and ship the Educational vs. Pure visual distinction (how a
-      primer reads and is visually distinguished from the challenge itself,
-      how a Pure quest's keyword-hints are presented without becoming a
-      disguised tutorial)
-- [ ] Design and ship Mastery Path progression UI (ordered sequence,
-      current position, fade-in-difficulty made visible, not just implied
-      by list order)
-- [ ] Exit gate: same dual-agent audit methodology 7.5 used, not a
-      changelog taken on faith
+principle already applied once this project (decision 9). Closed out
+2026-08-09, see decision 12.*
+- [x] Research: firecrawl pass on progressive disclosure (Nielsen Norman
+      Group's term for the "hints behind a reveal, not inline" pattern)
+      and stepper/timeline UI conventions, grounding both new components
+      before writing any code
+- [x] Educational vs. Pure visual distinction shipped: `QuestPrimer`, a
+      distinct `bg-surface-2` callout ("Before you start") above the
+      challenge for the one Educational quest, closed the moment it's
+      read, not gated; `ResearchHints`, a closed-by-default native
+      `<details>` panel below the challenge for Pure quests' keyword
+      pointers, so it reads as an opt-in nudge rather than a disguised
+      tutorial. A shared `QuestStyleBadge` (book/compass icon) surfaces
+      the distinction on catalog cards too, not just the detail page
+- [x] Mastery Path progression UI shipped: `PathStepDot` adapts the
+      existing activity-feed connecting-line/dot-node shape (DESIGN.md's
+      "live sequence" pattern) to a step sequence: passed (signal
+      checkmark), current position (accent ring, gated on a real signed-in
+      session), and difficulty fade via `--accent` border opacity across
+      the tier-interleaved order, not just implied by list position
+- [x] Exit gate: dual-agent `/impeccable critique` (two isolated
+      sub-agents, one design review, one detector+browser evidence,
+      neither saw the other's output). Found and fixed two real bugs
+      before closing, not just a changelog taken on faith, see decision
+      12 for detail. Score: 30/40 → ~38/40 post-fix
 
 ### Phase 9 — Gamification Expansion *(was Phase 8)*
 - [ ] Two-currency system (points/rank, spendable shop currency)
@@ -973,3 +984,31 @@ Formerly "open questions" — resolved:
     path, not a hard reload) never showed it. All four Foundations
     runners, 12 quests across 4 tracks, and a real Paths structure now
     exist — Phase 8 (Learning UI/UX) is next.
+12. **Phase 8 closed** (2026-08-09): `quests` gained `primerMarkdown`
+    (nullable, Educational quests only) and `researchKeywords` (array,
+    Pure quests only), splitting a primer out of the single
+    `promptMarkdown` blob it used to share with the challenge. The
+    dual-agent `/impeccable critique` exit gate (two isolated sub-agents,
+    a design review and a detector+browser-evidence pass, neither seeing
+    the other's output) found two real bugs, both fixed and verified live
+    before closing:
+    - **P0, pre-existing and app-wide, not a Phase 8 regression**:
+      `globals.css`'s `* { border-color: var(--line) }` was unlayered, so
+      per the CSS Cascade Layers spec it beat every layered
+      `border-{color}` Tailwind utility in the app regardless of
+      specificity or source order. This had already been silently
+      flattening `BadgePill`'s and the `systems` tag's intended violet
+      borders to plain grey; Phase 8's difficulty-tier stepper was just
+      the first feature whose entire signal depended on it, so the first
+      to visibly fail. Fixed by wrapping the rule in `@layer base`, which
+      repaired the two older components as a side effect.
+    - **P1, new**: the path stepper's "current step" ring was computed
+      without checking for a signed-in session, so it rendered on quest 1
+      for every visitor, signed in or not, contradicting the feature's
+      own intent of marking real progress. Fixed by gating
+      `currentQuestIdByPath` on `session`.
+    Score: 30/40 pre-fix to roughly 38/40 post-fix, independently
+    verified live in both themes after the fixes, not re-scored on
+    faith. All four Foundations runners, 12 quests, a real Paths
+    structure, and the Educational/Pure plus progression UI now exist,
+    Phase 9 (Gamification Expansion) is next.

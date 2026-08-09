@@ -144,6 +144,18 @@ export const quests = pgTable("quests", {
     .references(() => user.id),
   status: questStatus("status").notNull().default("draft"),
   style: questStyle("style").notNull().default("pure"),
+  // Phase 8: the structural half of the Educational/Pure distinction —
+  // style alone was just a label until now, both quest kinds shared one
+  // promptMarkdown blob with the primer (if any) folded into the same
+  // prose as the challenge. Educational quests get their concept primer
+  // here, rendered as its own visually distinct surface before the
+  // challenge; pure quests leave this null.
+  primerMarkdown: text("primer_markdown"),
+  // Pure quests' "keyword/concept pointers for external research" (see
+  // docs/MASTER_PLAN.md §1.5) — kept out of promptMarkdown so the UI can
+  // present them behind a progressive-disclosure reveal instead of inline,
+  // the difference between a real hint and a disguised tutorial.
+  researchKeywords: text("research_keywords").array().notNull().default([]),
   runner: questRunner("runner").notNull().default("sandbox-exec"),
   // Shape depends on `runner` — e.g. io-match's { entryFile, cases: [...] }.
   // sandbox-exec needs none of this (judge.sh works by file-extension

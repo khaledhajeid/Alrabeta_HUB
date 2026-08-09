@@ -27,6 +27,7 @@ async function main() {
       difficulty: "easy" as const,
       tags: ["algorithms", "warmup"],
       points: 20,
+      researchKeywords: ["linked list", "iterative pointer reversal", "in-place algorithm"],
       runner: "sandbox-exec" as const,
       runnerSpec: null,
       promptMarkdown: `The classic, for a reason — if you haven't done it in a while, it's worth doing again.
@@ -68,6 +69,7 @@ An empty list and a single-node list should both come back correctly reversed, w
       difficulty: "medium" as const,
       tags: ["systems", "c", "memory"],
       points: 80,
+      researchKeywords: ["malloc/free ownership", "valgrind --leak-check", "heap allocation lifetime"],
       runner: "sandbox-exec" as const,
       runnerSpec: null,
       promptMarkdown: `This one's smaller than it looks. That's usually how leaks are.
@@ -111,15 +113,22 @@ Find every allocation in this function (there's more than one), work out which o
       title: "The Careless Counter",
       summary: "Fourteen threads, one counter, zero synchronization. Guess what happens.",
       // The one quest in this retrofit that actually earns "educational":
-      // the prompt explains the race-condition mechanism itself ("counter++
-      // is a read, an increment, and a write...") before the challenge, a
-      // real brief concept primer, not just problem framing.
+      // primerMarkdown below explains the race-condition mechanism itself
+      // before the challenge, a real brief concept primer, not just
+      // problem framing — split out (Phase 8) so the UI can render it as
+      // its own distinct surface instead of folding it into the same
+      // prose as the challenge.
       style: "educational" as const,
       difficulty: "hard" as const,
       tags: ["systems", "c", "multithreading"],
       points: 150,
       runner: "sandbox-exec" as const,
       runnerSpec: null,
+      primerMarkdown: `A **race condition** happens when two or more threads touch the same piece of shared state without coordination, and the final result depends on the order the scheduler happens to interleave them — an order you don't control and can't rely on being consistent between runs.
+
+The classic trap: an operation that looks like one step in source code often isn't one step in hardware. \`counter++\` reads the current value, adds one, then writes it back — three distinct steps. If two threads each start that sequence before either finishes it, one thread's write can silently overwrite the other's, and an increment gets lost. Run the same program twice and you can get two different, both wrong, answers.
+
+Fixing this means making the read-modify-write sequence atomic, so no other thread can observe or interleave with it mid-flight, whether through a lock, an atomic type, or by restructuring the work so nothing is actually shared.`,
       promptMarkdown: `Somebody on the team wrote a "simple" hit counter for tracking how many times a shared resource gets touched. It compiles. It runs. It even gives a plausible-looking number most of the time.
 
 It's wrong.
@@ -148,7 +157,7 @@ int main(void) {
 }
 \`\`\`
 
-Run it a few times. \`800000\` is the answer if nothing goes wrong. Nothing going wrong is not guaranteed — \`counter++\` is a read, an increment, and a write, and nothing stops two threads from doing all three at once and clobbering each other's work.
+Run it a few times. \`800000\` is the answer if nothing goes wrong. Nothing going wrong is not guaranteed.
 
 ## What to do
 
@@ -173,6 +182,7 @@ That last ThreadSanitizer point isn't optional flavor text — it's literally ho
       difficulty: "easy" as const,
       tags: ["bash", "text-processing", "foundations"],
       points: 30,
+      researchKeywords: ["grep", "awk field extraction", "reading stdin line by line in bash"],
       runner: "io-match" as const,
       runnerSpec: {
         entryFile: "solution.sh",
@@ -241,6 +251,7 @@ If nothing failed, print nothing.
       difficulty: "easy" as const,
       tags: ["git", "foundations"],
       points: 30,
+      researchKeywords: ["Conventional Commits", "git rebase -i", "git commit --amend"],
       runner: "git-assert" as const,
       runnerSpec: {
         baseRef: "main",
@@ -274,6 +285,7 @@ Unlike the C/C++ or Bash quests, nothing here runs or compiles — this one's gr
       difficulty: "easy" as const,
       tags: ["docker", "foundations"],
       points: 40,
+      researchKeywords: ["Dockerfile USER instruction", "pinned base image tags", "hadolint"],
       runner: "dockerfile-check" as const,
       runnerSpec: {
         assertions: [
@@ -316,6 +328,7 @@ This one is graded by actually building your image in a locked down, network res
       difficulty: "medium" as const,
       tags: ["bash", "text-processing", "foundations"],
       points: 45,
+      researchKeywords: ["awk associative arrays", "sort -n", "uniq -c"],
       runner: "io-match" as const,
       runnerSpec: {
         entryFile: "solution.sh",
@@ -371,6 +384,7 @@ Write \`solution.sh\` that counts how many times each status code appears, then 
       difficulty: "hard" as const,
       tags: ["bash", "text-processing", "foundations"],
       points: 65,
+      researchKeywords: ["bash associative arrays (declare -A)", "record-oriented parsing", "IFS and read"],
       runner: "io-match" as const,
       runnerSpec: {
         entryFile: "solution.sh",
@@ -428,6 +442,7 @@ bob 45 timeout
       difficulty: "medium" as const,
       tags: ["git", "foundations"],
       points: 35,
+      researchKeywords: ["git rebase", "atomic commits", "git log --oneline"],
       runner: "git-assert" as const,
       runnerSpec: {
         baseRef: "main",
@@ -459,6 +474,7 @@ Graded by inspecting your actual \`git log\`, same as the other Git quests, noth
       difficulty: "hard" as const,
       tags: ["git", "foundations"],
       points: 55,
+      researchKeywords: ["git rebase -i", "Conventional Commits scopes", "squashing commits"],
       runner: "git-assert" as const,
       runnerSpec: {
         baseRef: "main",
@@ -492,6 +508,7 @@ As before, it doesn't matter what the commits actually change, write real, disti
       difficulty: "medium" as const,
       tags: ["docker", "foundations"],
       points: 45,
+      researchKeywords: ["multi-stage Docker builds", "alpine/distroless base images", "image layer size"],
       runner: "dockerfile-check" as const,
       runnerSpec: {
         assertions: [
@@ -526,6 +543,7 @@ That number rules out a lot of default choices. A full Debian or Ubuntu base alo
       difficulty: "hard" as const,
       tags: ["docker", "foundations"],
       points: 55,
+      researchKeywords: ["Dockerfile HEALTHCHECK instruction", "container liveness checks", "entrypoint scripts"],
       runner: "dockerfile-check" as const,
       runnerSpec: {
         assertions: [
@@ -568,6 +586,8 @@ Same non root, pinned tag, hadolint clean baseline as the other Docker quests, p
           runner: quest.runner,
           runnerSpec: quest.runnerSpec,
           promptMarkdown: quest.promptMarkdown,
+          primerMarkdown: "primerMarkdown" in quest ? quest.primerMarkdown : null,
+          researchKeywords: "researchKeywords" in quest ? quest.researchKeywords : [],
           updatedAt: new Date(),
         },
       });
