@@ -707,3 +707,23 @@ Formerly "open questions" — resolved:
    fail with per-check detail, and the PoC's own exfiltration fixture
    re-run through the production wiring, still hitting the same squid
    403.
+9. **Content buildout picked over Paths browsing UI** (2026-08-09) as the
+   next Phase 7 step, once all four runners existed. Reasoning: three of
+   four Foundations tracks (Bash, Git, Docker) had exactly one quest each,
+   a proof point, not a track. Building a browsing/organization layer for
+   a nearly empty catalog would have delivered little real value and
+   risked rework once real content patterns emerged, while thin content
+   was the actual gap standing between the platform and real usage.
+   Shipped two new quests per thin track, bringing every track to parity
+   with C/C++'s existing three. Writing this content directly caught two
+   more real bugs in already-shipped grading code: `io-match`'s stdin
+   handling silently dropped a submission's last input line whenever a
+   case's stdin ended in a newline (a bash command-substitution quirk
+   affecting the already-live `extract-failed-logins` quest, not just new
+   content), and `dockerfile-check`'s `has-healthcheck` assertion could
+   never pass, since `skopeo inspect --config` silently drops the
+   `Healthcheck` field even when genuinely present. Both fixed and shipped
+   as their own PRs before the content that depended on them, and both
+   are more evidence for the same pattern as every prior runner bug in
+   this project: build real content against a runner and it will surface
+   gaps that fixture-only testing didn't reach.
