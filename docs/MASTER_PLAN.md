@@ -806,7 +806,7 @@ principle already applied once this project (decision 9). Closed out
       before closing, not just a changelog taken on faith, see decision
       12 for detail. Score: 30/40 → ~38/40 post-fix
 
-### Phase 8.5 — Paths Information Architecture & Home Redesign
+### Phase 8.5 — Paths Information Architecture & Home Redesign ✅ done
 *Inserted 2026-08-09 (decision 13), same relationship to Phase 8 that 7.5
 had to Phase 6 and Phase 8 had to Phase 7: a research-grounded UI pass
 triggered by direct user critique of what Phase 8 shipped, not a new
@@ -859,7 +859,7 @@ application of that research than forcing interleaving into one flat list.
       WCAG contrast across its own gradient, undifferentiated track cards,
       and `/quests` silently duplicating `/paths`' content with no stated
       relationship. Score: 30/40 pre-fix to roughly 36/40 post-fix
-- [ ] `/impeccable shape` for the Home dashboard: **two real states, not
+- [x] `/impeccable shape` for the Home dashboard: **two real states, not
       one** (decision 15): signed-in (progress across active
       paths/tracks, points/rank, a continue-where-you-left-off card, and
       Daily/Standalone quests; activity feed demotes to a secondary
@@ -868,22 +868,25 @@ application of that research than forcing interleaving into one flat list.
       "should read as premium and self-explanatory to a stranger"
       currently has no page backing it; a signed-out visitor lands on the
       same raw internal activity feed a signed-in user does today)
-- [ ] Nav/logo pass: the icon mark is illegible at 28px nav scale (dense
+- [x] Nav/logo pass: the icon mark is illegible at 28px nav scale (dense
       internal detail that only resolves zoomed in, unlike Linear's/
       Vercel's single-geometric-move marks); nav shell itself is flat
       with a hard border, no blur-on-scroll or elevation, undercutting
       the Vercel/Linear/Raycast register the rest of the system already
       commits to
-- [ ] Custom `not-found.tsx` (decision 15): every `notFound()` call today
+- [x] Custom `not-found.tsx` (decision 15): every `notFound()` call today
       (a bad quest/track slug) falls through to Next's generic default
       404, a jarring drop out of the register every other screen commits
       to. Small and cheap enough to fold in here rather than wait for
       Phase 12's broader error/empty-state audit
-- [ ] `craft` the Home dashboard (both states), nav/logo pass, and the
+- [x] `craft` the Home dashboard (both states), nav/logo pass, and the
       custom 404 once shaped
-- [ ] Exit gate for the Home dashboard, nav/logo pass, and 404: same
+- [x] Exit gate for the Home dashboard, nav/logo pass, and 404: same
       dual-agent `/impeccable critique` methodology, not a changelog
-      taken on faith
+      taken on faith. Found and fixed two real issues before closing (see
+      decision 16): a mobile-menu with no way to dismiss by clicking away,
+      and a points stat with no explanation anywhere on the page. Score:
+      32/40, detector scan clean across every changed file
 
 ### Phase 9 — Gamification Expansion *(was Phase 8)*
 - [ ] Two-currency system (points/rank, spendable shop currency)
@@ -1183,3 +1186,35 @@ Formerly "open questions" — resolved:
       dashboard's continue-where-you-left-off card is enough for now).
     No phase renumbering, no new phase inserted, existing sequencing
     (8.5 now, 9 next) confirmed correct.
+16. **Phase 8.5 closed** (2026-08-10): Home dashboard (signed-in progress
+    view + signed-out landing), a dedicated `/activity` route (the old
+    home page's live cross-user feed, moved wholesale), a new single-shape
+    `LogoIcon` mark (a chamfered rounded square replacing a dense
+    multi-path illustration illegible at 28px nav scale), sticky nav with
+    backdrop-blur and scroll-driven elevation, and a custom `not-found.tsx`
+    all shipped. Two real decisions made mid-build, not scope creep:
+    - Points render as a real computed sum (passed-submission points,
+      total) with **no rank**, since Phase 9's leaderboard doesn't exist
+      yet; a placeholder rank would violate this project's own "verify,
+      don't just check" principle applied to its own UI, not just its
+      grading.
+    - "Daily quests" from the original roadmap language became "standalone
+      quests" (published quests with no track), since there is no
+      daily-rotation mechanic in the schema, and building one now would be
+      new scope disguised as a UI pass.
+    - The nav's inline-link breakpoint moved from `sm:` to `lg:` mid-build,
+      found empirically: five links plus the wordmark plus the auth button
+      overflowed at both 640px and 768px (the wordmark ran directly into
+      "Paths" with zero gap at 768px, caught in a real screenshot, not
+      guessed).
+    The dual-agent `/impeccable critique` exit gate found and fixed two
+    real issues before closing: a mobile-menu dropdown with no way to
+    dismiss by clicking away (this phase's own breakpoint move widened who
+    hits it, from phone-only to tablet widths too, fixed with a
+    click-outside handler, deliberately not a modal scrim, matching this
+    project's own dropdown-vs-modal z-index distinction), and a points
+    figure with no explanation anywhere on the page (fixed with a plain
+    tooltip; a link to `/profile` was considered and rejected since that
+    page's own placeholder still disclaims points as not-yet-built).
+    Score: 32/40, detector scan clean across every changed file. Phase 9
+    (Gamification Expansion) is next, not yet started.
