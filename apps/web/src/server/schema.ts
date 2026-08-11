@@ -363,3 +363,12 @@ export const trackQuestsRelations = relations(trackQuests, ({ one }) => ({
   track: one(tracks, { fields: [trackQuests.trackId], references: [tracks.id] }),
   quest: one(quests, { fields: [trackQuests.questId], references: [quests.id] }),
 }));
+
+// Phase 9: the leaderboard needs "this passed submission's quest.points and
+// quest.status" and the relational query API can't join without a declared
+// relation — every other FK-bearing table already has one of these, this
+// one was just never needed until a query had to reach across it.
+export const questSubmissionsRelations = relations(questSubmissions, ({ one }) => ({
+  quest: one(quests, { fields: [questSubmissions.questId], references: [quests.id] }),
+  user: one(user, { fields: [questSubmissions.userId], references: [user.id] }),
+}));

@@ -893,13 +893,14 @@ application of that research than forcing interleaving into one flat list.
 - [ ] Streaks, computed off submission history
 - [ ] Shop v1 (cosmetic items + Discord role integration)
 - [ ] Post-solve peer solution visibility
-- [ ] Leaderboard route (decision 15): the two-currency system above
-      builds points/rank but has no page that surfaces rank against
-      other people; without one, "rank" is only ever visible on your
-      own profile, which makes the concept inert. Standard on every
-      comparable platform (LeetCode, HackerRank, Codecademy); dead
-      without this phase's own currency work underneath it, so it belongs
-      here, not earlier
+- [x] Leaderboard route (decision 15, shipped decision 17): the
+      two-currency system above builds points/rank but has no page that
+      surfaces rank against other people; without one, "rank" is only ever
+      visible on your own profile, which makes the concept inert. Standard
+      on every comparable platform (LeetCode, HackerRank, Codecademy);
+      shipped first, ranked by real points already computed from passed
+      submissions, ahead of the rest of this phase's currency/streak/shop
+      work rather than blocked on it
 
 ### Phase 10 — Admin Panel *(was Phase 9)*
 - [ ] User list + role management
@@ -1218,3 +1219,36 @@ Formerly "open questions" — resolved:
     page's own placeholder still disclaims points as not-yet-built).
     Score: 32/40, detector scan clean across every changed file. Phase 9
     (Gamification Expansion) is next, not yet started.
+17. **Leaderboard route shipped** (2026-08-11), the first slice of Phase 9,
+    taken through `/impeccable shape` → `craft` on its own rather than
+    waiting for the rest of the phase's currency/streak/shop work — the
+    shape brief scoped it to rank off the real points total that already
+    existed (`dashboard.ts`'s passed-submission sum), not a placeholder for
+    the not-yet-built two-currency system, matching decision 16's own
+    "verify, don't just check" stance applied to this UI. Public, not
+    auth-gated: a mid-build discovery found `/activity` (cross-user
+    platform state) has no session check at all despite the shape brief's
+    initial assumption it was gated "like Activity/Profile" — that
+    assumption was simply wrong, `/activity` and `/profile` aren't
+    consistent with each other, so the user picked public-like-Activity
+    explicitly rather than the brief's guess standing uncorrected.
+    A real correctness gap surfaced along the way: `dashboard.ts`'s
+    `pointsEarned` only sums points from quests inside a published track,
+    silently excluding standalone published quests — fine for Phase 8.5's
+    own narrower need, but wrong for a global ranking, so the leaderboard
+    computes its own total (every passed submission against a published
+    quest, tracked or standalone, deduped by quest id) rather than reusing
+    that narrower helper. Flagged to the user rather than silently fixed as
+    a drive-by change on an already-shipped Phase 8.5 surface; the user
+    asked for the fix, so `dashboard.ts`'s `pointsEarned` now sums the same
+    way — every passed+published quest, deduped by quest id, tracked or
+    standalone — and both computations agree. Dual-agent-equivalent
+    `/impeccable` layout + typography assessments (isolated
+    assessment-then-pre-scan pairs, both scopes) found one real issue
+    each: a stale nav comment left over from the Phase 8.5 breakpoint
+    move (now six links, not five — re-verified at 1024px/768px, no
+    breakpoint change needed) and the points figure sized `text-sm` where
+    DESIGN.md's own scale and the `quests/page.tsx` precedent both call
+    for `text-xs` metadata sizing (also flattened the row's two-tier size
+    hierarchy as a side effect). Both fixed before shipping. Detector
+    pre-scans clean on both scopes across both changed files.
