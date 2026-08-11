@@ -662,7 +662,14 @@ informal tags).*
 
 - [ ] Design the two-currency model (permanent points/rank vs. spendable
       shop currency) and the schema it needs
-- [ ] Streak tracking, computed off submission history
+- [x] Streak tracking (decision 18): consecutive UTC calendar days with at
+      least one passing submission, any pass counts (including resubmits
+      of an already-passed quest — simplest rule, gaming it isn't a real
+      risk at 14 trusted users). Current + longest streak on the Profile
+      page, in the already-reserved `--ember` token (DESIGN.md named it
+      for "streaks/warnings" back in Phase 7.5.A but nothing used it in UI
+      chrome until now). Hard reset on a missed day, no grace period.
+      Profile-only for this slice, not home dashboard or nav
 - [ ] Shop v1: cosmetic items (profile flair, title, activity-feed
       feature), admin-addable manual/"real-world" reward line items
 - [ ] Discord role integration at point thresholds (extends the existing

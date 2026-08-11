@@ -890,7 +890,11 @@ application of that research than forcing interleaving into one flat list.
 
 ### Phase 9 — Gamification Expansion *(was Phase 8)*
 - [ ] Two-currency system (points/rank, spendable shop currency)
-- [ ] Streaks, computed off submission history
+- [x] Streaks, computed off submission history (decision 18): shaped and
+      crafted as its own slice, shipped ahead of the currency/shop work.
+      Any passing submission extends a UTC-calendar-day streak; current +
+      longest shown on Profile in the `--ember` token DESIGN.md reserved
+      for this since Phase 7.5.A
 - [ ] Shop v1 (cosmetic items + Discord role integration)
 - [ ] Post-solve peer solution visibility
 - [x] Leaderboard route (decision 15, shipped decision 17): the
@@ -1252,3 +1256,28 @@ Formerly "open questions" — resolved:
     for `text-xs` metadata sizing (also flattened the row's two-tier size
     hierarchy as a side effect). Both fixed before shipping. Detector
     pre-scans clean on both scopes across both changed files.
+
+18. **Streak tracking shipped** (2026-08-12), the second slice of Phase 9,
+    shaped and crafted as its own cycle rather than folded into the
+    currency/shop work. Shape discovery settled three open questions, all
+    the recommended defaults: any passing submission extends the streak
+    (including a resubmit of an already-passed quest — matches GitHub's
+    contribution-streak model, and gaming it isn't a real risk at 14
+    trusted people); Profile-page only for this slice, not home dashboard
+    or nav; hard reset on a missed day, no grace/freeze mechanic. Computed
+    server-side in `server/streak.ts` off `questSubmissions.submittedAt`,
+    grouped by UTC calendar day (not per-user local time — avoids real
+    timezone state for a v1); "today" counts as still-alive even before
+    the user has submitted anything today, so visiting your own profile
+    mid-day doesn't show a false break. Fills the exact placeholder the
+    Profile page's Streak card has held open since Phase 7.5.F ("streak
+    and points fill in once gamification lands") using `--ember`, a token
+    DESIGN.md reserved for "streaks/warnings" back in Phase 7.5.A but that
+    had never actually rendered in UI chrome (only syntax highlighting)
+    until this shipped. Verified in-browser across all three states
+    (never-submitted, broken/0-day-with-a-longest-streak, active) in both
+    themes; the broken-streak state used real production data (a genuine
+    2-day streak that had lapsed), the active state used a temporary
+    reverted render override rather than fabricated database rows, same
+    non-destructive-verification discipline as decision 17's leaderboard
+    "you" row.
