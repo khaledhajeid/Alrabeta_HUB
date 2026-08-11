@@ -2,6 +2,7 @@ import { and, desc, eq, notInArray } from "drizzle-orm";
 import { db } from "./db";
 import { paths, tracks, quests, questSubmissions } from "./schema";
 import type { trackIcon, questDifficulty } from "./schema";
+import { sumPassedQuestPoints } from "./points";
 
 export type ActiveTrack = {
   pathSlug: string;
@@ -67,6 +68,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       where: eq(questSubmissions.userId, userId),
       orderBy: desc(questSubmissions.submittedAt),
       columns: { questId: true, status: true, submittedAt: true },
+      with: { quest: { columns: { points: true, status: true } } },
     }),
     trackedQuestIds.size > 0
       ? db.query.quests.findMany({
@@ -81,9 +83,13 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         }),
   ]);
 
-  const passedQuestIds = new Set(
-    submissions.filter((s) => s.status === "passed").map((s) => s.questId),
-  );
+  // Filtered once — passedQuestIds (activeTracks/continueCard) and
+  // pointsEarned (via the shared sumPassedQuestPoints, also used by
+  // leaderboard.ts so the two totals can't drift apart) both derive from
+  // this same "is this submission a pass" pass instead of re-deriving it
+  // independently.
+  const passedSubmissions = submissions.filter((s) => s.status === "passed");
+  const passedQuestIds = new Set(passedSubmissions.map((s) => s.questId));
   // submissions is already ordered newest-first, so the first hit per
   // questId is that quest's most recent submission time.
   const lastTouchedAt = new Map<string, Date>();
@@ -91,10 +97,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     if (!lastTouchedAt.has(s.questId)) lastTouchedAt.set(s.questId, s.submittedAt);
   }
 
-  const pointsEarned = publishedTracks
-    .flatMap((t) => t.trackQuests.map((tq) => tq.quest))
-    .filter((q) => passedQuestIds.has(q.id))
-    .reduce((sum, q) => sum + q.points, 0);
+  const pointsEarned = sumPassedQuestPoints(passedSubmissions);
 
   const activeTracks: ActiveTrack[] = [];
   let continueCard: ContinueCard | null = null;

@@ -669,11 +669,21 @@ informal tags).*
       webhook integration)
 - [ ] Post-solve peer solution visibility (once passed, see others'
       accepted solutions for that quest)
-- [ ] Leaderboard route (decision 15): the two-currency system above has
-      no page that surfaces rank against other people; without one,
-      "rank" is only ever visible on your own profile. Standard on every
-      comparable platform (LeetCode, HackerRank, Codecademy); depends on
-      this phase's own currency work, so it belongs here
+- [x] Leaderboard route (decision 15, shipped decision 17): the
+      two-currency system above has no page that surfaces rank against
+      other people; without one, "rank" is only ever visible on your own
+      profile. Standard on every comparable platform (LeetCode,
+      HackerRank, Codecademy); shipped ranked by real points already
+      computed from passed submissions, ahead of the rest of this phase's
+      currency/streak/shop work rather than blocked on it. Public route
+      (no auth gate, matching `/activity`'s precedent), highlights the
+      current user's own row + a "You're #N of M" summary when signed in.
+      A real gap surfaced along the way: the Home dashboard's own points
+      stat (`dashboard.ts`) only counted track-scoped quests, undercounting
+      anyone who'd solved a standalone quest — flagged to the user rather
+      than fixed as a drive-by change, then fixed on request:
+      `dashboard.ts`'s `pointsEarned` now sums the same way the leaderboard
+      does (every passed+published quest, deduped by quest id)
 
 ---
 

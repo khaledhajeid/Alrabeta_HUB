@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/quests", label: "Quests" },
   { href: "/repos", label: "Repos" },
   { href: "/activity", label: "Activity" },
+  { href: "/leaderboard", label: "Leaderboard" },
   { href: "/profile", label: "Profile" },
 ];
 
@@ -68,7 +69,10 @@ export async function Nav() {
               the old sm: (640px) and an intermediate md: (768px) — measured
               empirically (wordmark ran directly into "Paths" with zero gap
               at 768px). Inline nav moved to lg: (1024px), where there's
-              real room; MobileMenu now covers phone AND tablet widths. */}
+              real room; MobileMenu now covers phone AND tablet widths.
+              Phase 9 added a sixth link (Leaderboard) — re-checked at
+              1024px and 768px, still comfortable room to spare at lg:, no
+              breakpoint change needed. */}
           <nav className="hidden items-center gap-4 lg:flex">
             {LINKS.map((link) => (
               <Link
