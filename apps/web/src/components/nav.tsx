@@ -5,11 +5,13 @@ import { LogoIcon, Wordmark } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { AuthButton } from "./auth-button";
 import { MobileMenu } from "./mobile-menu";
+import { NavScroll } from "./nav-scroll";
 
 const LINKS = [
   { href: "/paths", label: "Paths" },
   { href: "/quests", label: "Quests" },
   { href: "/repos", label: "Repos" },
+  { href: "/activity", label: "Activity" },
   { href: "/profile", label: "Profile" },
 ];
 
@@ -24,7 +26,20 @@ export async function Nav() {
     // viewTransitionName anchors this element across route-transition.tsx's
     // navigations (see globals.css's site-header rules) — the header is the
     // one thing on screen that must never appear to move or refade.
-    <header className="relative bg-surface shadow-resting" style={{ viewTransitionName: "site-header" }}>
+    //
+    // Phase 8.5 nav/logo pass: sticky + backdrop-blur is the Vercel/Linear
+    // premium-nav signature this system was missing — a flat bar with a
+    // hard border read as "divided from the page," not "floating above
+    // it." Elevation escalates from shadow-resting to shadow-raised once
+    // scrolled (nav-scroll.tsx, via :root[data-scrolled] in globals.css)
+    // instead of being always-on, so the lift itself communicates "the
+    // page moved," matching this system's existing state-not-decoration
+    // motion rule.
+    <header
+      className="site-header sticky top-0 z-(--z-sticky) bg-surface/85 shadow-resting backdrop-blur-md transition-[box-shadow] duration-(--motion-base) ease-(--ease-out-quint)"
+      style={{ viewTransitionName: "site-header" }}
+    >
+      <NavScroll />
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
         {/* py-2 gives a 44px-tall hit area around the 28px icon (this
             project's own documented touch-target minimum); -ml-2 cancels a
@@ -48,11 +63,13 @@ export async function Nav() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Three links comfortably fit inline on wider screens; at phone
-              widths they move behind MobileMenu instead of shrinking further
-              — three text links plus auth plus theme toggle simply doesn't
-              fit in 375px no matter how tight the spacing gets. */}
-          <nav className="hidden items-center gap-4 sm:flex">
+          {/* Phase 8.5 added a fifth link (Activity) — five text links plus
+              the wordmark, auth button, and theme toggle overflow at both
+              the old sm: (640px) and an intermediate md: (768px) — measured
+              empirically (wordmark ran directly into "Paths" with zero gap
+              at 768px). Inline nav moved to lg: (1024px), where there's
+              real room; MobileMenu now covers phone AND tablet widths. */}
+          <nav className="hidden items-center gap-4 lg:flex">
             {LINKS.map((link) => (
               <Link
                 key={link.href}

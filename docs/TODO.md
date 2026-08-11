@@ -589,7 +589,7 @@ the full rationale. Closed out 2026-08-09.*
 
 ---
 
-## Phase 8.5 — Paths Information Architecture & Home Redesign
+## Phase 8.5 — Paths Information Architecture & Home Redesign ✅ done
 
 *Inserted 2026-08-09, triggered by direct user critique of the shipped
 Phase 8 UI. See `docs/MASTER_PLAN.md`'s Phase 8.5 entry and decision 13
@@ -626,23 +626,35 @@ informal tags).*
         "Part of [Track]" per quest)
       Score: 30/40 pre-fix → ~36/40 post-fix. 2 P3s deliberately deferred
       (lateral track-to-track nav, single-path sparseness)
-- [ ] `/impeccable shape` for the Home dashboard: two real states (decision
+- [x] `/impeccable shape` for the Home dashboard: two real states (decision
       15), not one. Signed-in: progress across active paths/tracks,
       points/rank, continue-where-you-left-off, Daily/Standalone quests;
       activity feed demotes to a secondary module or its own `/activity`
       route. Signed-out: what this platform is, who it's for, sign-in
       CTA, currently a stranger lands on the same raw internal activity
       feed a signed-in user does
-- [ ] Nav/logo pass: icon mark illegible at 28px nav scale, nav shell
+- [x] Nav/logo pass: icon mark illegible at 28px nav scale, nav shell
       lacks elevation/blur-on-scroll relative to the Vercel/Linear/
       Raycast register the rest of the system commits to
-- [ ] Custom `not-found.tsx` (decision 15): `notFound()` calls today fall
+- [x] Custom `not-found.tsx` (decision 15): `notFound()` calls today fall
       through to Next's generic default 404, breaking the register every
       other screen commits to; cheap enough to fold in here
-- [ ] `craft` the Home dashboard (both states), nav/logo pass, and the
-      custom 404 once shaped
-- [ ] Exit gate for the Home dashboard, nav/logo pass, and 404: same
-      dual-agent `/impeccable critique` methodology
+- [x] `craft` the Home dashboard (both states), nav/logo pass, and the
+      custom 404: signed-in dashboard shows a real computed points total
+      with no rank (Phase 9's leaderboard doesn't exist yet), "Daily
+      quests" became "standalone quests" (no daily-rotation mechanic
+      exists, building one now would be new scope), `/activity` is a new
+      dedicated route for the old home page's live feed, `LogoIcon` is a
+      new single-shape chamfered-square mark replacing an illegible
+      multi-path illustration, nav is sticky with backdrop-blur and
+      scroll-driven elevation. Inline-nav breakpoint moved from `sm:` to
+      `lg:` mid-build after finding real overflow at 640px and 768px
+- [x] Exit gate for the Home dashboard, nav/logo pass, and 404: same
+      dual-agent `/impeccable critique` methodology. Found and fixed 2
+      real issues, see `docs/MASTER_PLAN.md` decision 16 for full detail:
+      a mobile-menu with no way to dismiss by clicking away (breakpoint
+      move widened who hits it), and a points stat with no explanation
+      anywhere on the page. Score: 32/40, detector scan clean
 
 ---
 

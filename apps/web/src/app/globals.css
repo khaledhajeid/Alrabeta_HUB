@@ -162,6 +162,15 @@
   }
 }
 
+/* Phase 8.5 nav/logo pass — nav-scroll.tsx (client, renders nothing) sets
+   data-scrolled on the root element the same way theme-script.tsx sets
+   data-theme, so .site-header (a plain async server component — it needs
+   the session) never needs its own client boundary just to react to
+   scroll position. */
+:root[data-scrolled="true"] .site-header {
+  box-shadow: var(--shadow-raised);
+}
+
 /* Phase 7.5.C — route transitions (React's <ViewTransition>, wired in
    route-transition.tsx). The nav stays visually anchored across every
    navigation — a fixed reference point matters more here than any

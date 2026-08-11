@@ -43,8 +43,32 @@ export function MobileMenu({ links }: { links: Array<{ href: string; label: stri
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
+  // Phase 8.5 critique fix: this panel has never had a backdrop scrim —
+  // z-(--z-dropdown), not --z-modal-backdrop, on purpose (DESIGN.md's own
+  // z-index scale treats this as a lightweight dropdown, not a modal, so a
+  // dimming overlay would be the wrong fix and a heavier visual change than
+  // this component warrants). What it was actually missing is the standard
+  // dropdown dismiss behavior: page content stayed fully clickable right
+  // behind the open panel with no way to close it except Escape or the
+  // toggle button itself. The dual-agent critique caught this
+  // independently in both assessments; moving the inline-nav breakpoint to
+  // lg: this same phase widened who hits it, from phone-only to tablet
+  // widths too, where a mouse user expects clicking away to dismiss.
+  useEffect(() => {
+    if (!open) return;
+
+    function onPointerDown(e: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
   return (
-    <div className="sm:hidden" ref={containerRef}>
+    <div className="lg:hidden" ref={containerRef}>
       <button
         ref={buttonRef}
         type="button"
