@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, uuid, jsonb, boolean, integer, unique, index, pgEnum } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { pgTable, text, timestamp, uuid, jsonb, boolean, integer, unique, index, pgEnum, check } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
 import { user } from "./auth-schema";
 
 // User identity (user/session/account/verification) lives in ./auth-schema.ts,
@@ -341,6 +341,56 @@ export const badges = pgTable(
     awardedAt: timestamp("awarded_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [unique("badges_user_slug_unique").on(table.userId, table.slug)],
+);
+
+// Phase 9: the spendable half of the two-currency model (permanent
+// points/rank on the leaderboard, unaffected by this table, vs. this
+// spendable balance). A ledger, not a stored balance column — same
+// "derive from source of truth, never cache a running total" posture as
+// points/streak already use, and it gives Shop v1's purchases and
+// admin-granted real-world rewards a natural home as rows here too.
+export const creditReason = pgEnum("credit_reason", [
+  "quest_passed",
+  "admin_grant",
+  "shop_purchase",
+]);
+
+export const creditTransactions = pgTable(
+  "credit_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // Signed: positive for quest_passed/admin_grant, negative for the
+    // future shop_purchase. A user's balance is sum(amount) over their rows.
+    amount: integer("amount").notNull(),
+    reason: creditReason("reason").notNull(),
+    // Set only for reason = "quest_passed"; null for admin_grant/shop_purchase.
+    // set null (not cascade) on quest deletion — an earned credit is history,
+    // not a live view, so it must survive the quest it was earned from being
+    // removed later; only the traceability link is lost.
+    questId: uuid("quest_id").references(() => quests.id, { onDelete: "set null" }),
+    // Admin-grant memo (e.g. "real-world reward: t-shirt") — always null for
+    // quest_passed rows, which are self-explanatory via questId.
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // Blocks double-earning credits on a quest resubmit. Postgres treats
+    // NULLs as distinct in a unique constraint, so admin_grant/shop_purchase
+    // rows (questId null) never collide with each other here.
+    unique("credit_transactions_user_quest_unique").on(table.userId, table.questId),
+    // Enforces at the schema level what was previously only a comment:
+    // questId is only ever set for quest_passed rows. Without this, a
+    // future admin_grant tied to a questId the user already has a
+    // quest_passed row for would silently no-op against the unique
+    // constraint above instead of failing loudly.
+    check(
+      "credit_transactions_quest_id_only_for_quest_passed",
+      sql`${table.reason} = 'quest_passed' OR ${table.questId} IS NULL`,
+    ),
+  ],
 );
 
 export const questsRelations = relations(quests, ({ one, many }) => ({

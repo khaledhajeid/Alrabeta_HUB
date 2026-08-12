@@ -11,7 +11,8 @@
     "judge-worker": "tsx watch --env-file=.env.local src/judge-worker.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed-quests": "tsx --env-file=.env.local scripts/seed-quests.ts"
+    "db:seed-quests": "tsx --env-file=.env.local scripts/seed-quests.ts",
+    "db:backfill-credits": "tsx --env-file=.env.local scripts/backfill-credits.ts"
   },
   "dependencies": {
     "better-auth": "^1.6.26",

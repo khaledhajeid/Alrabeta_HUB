@@ -660,8 +660,17 @@ informal tags).*
 
 ## Phase 9 — Gamification Expansion *(was Phase 8)*
 
-- [ ] Design the two-currency model (permanent points/rank vs. spendable
-      shop currency) and the schema it needs
+- [x] Two-currency model (decision 19): permanent points/rank (leaderboard,
+      unaffected by this) vs. spendable Credits, earned one-time per quest
+      passed, 1:1 with the quest's point value. `credit_transactions` is a
+      ledger table (signed amount, reason: `quest_passed`/`admin_grant`/
+      `shop_purchase`), balance = `sum(amount)` on read, not a stored
+      column — gives Shop v1's purchases and admin-granted rewards below a
+      natural home in the same table. Earning wired into `judge-worker.ts`
+      alongside badge awarding, idempotent via a `unique(userId, questId)`
+      constraint. Existing passed submissions backfilled via
+      `npm run db:backfill-credits`. Balance shown on Profile now, ahead of
+      Shop v1 existing to spend it
 - [x] Streak tracking (decision 18): consecutive UTC calendar days with at
       least one passing submission, any pass counts (including resubmits
       of an already-passed quest — simplest rule, gaming it isn't a real
