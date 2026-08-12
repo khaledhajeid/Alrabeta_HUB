@@ -679,8 +679,14 @@ informal tags).*
       for "streaks/warnings" back in Phase 7.5.A but nothing used it in UI
       chrome until now). Hard reset on a missed day, no grace period.
       Profile-only for this slice, not home dashboard or nav
-- [ ] Shop v1: cosmetic items (profile flair, title, activity-feed
-      feature), admin-addable manual/"real-world" reward line items
+- [x] Shop v1 (decision 20): cosmetic flair + title (owned forever, equip
+      one of each), a repeatable "Spotlight" activity-feed feature, and
+      admin-addable real-world reward line items, catalog authored via
+      `npm run db:seed-shop-items` ahead of the admin panel. Purchases go
+      through a confirm dialog (irreversible spend) and write a
+      `shop_purchases` row plus a negative `credit_transactions` row in one
+      transaction; equipped flair/title show on Profile and the
+      leaderboard
 - [ ] Discord role integration at point thresholds (extends the existing
       webhook integration)
 - [ ] Post-solve peer solution visibility (once passed, see others'

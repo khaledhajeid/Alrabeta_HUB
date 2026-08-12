@@ -1,5 +1,6 @@
 import { checkHealth } from "@/server/health";
 import { getRecentActivity } from "@/server/activity";
+import { getActiveFeaturedNames } from "@/server/shop";
 import { ActivityFeed } from "@/components/activity-feed";
 
 // Phase 8.5: this page is the old home page's content, moved wholesale.
@@ -18,7 +19,11 @@ const SERVICES = [
 ] as const;
 
 export default async function ActivityPage() {
-  const [status, activity] = await Promise.all([checkHealth(), getRecentActivity()]);
+  const [status, activity, featuredNames] = await Promise.all([
+    checkHealth(),
+    getRecentActivity(),
+    getActiveFeaturedNames(),
+  ]);
   const allUp = Object.values(status).every(Boolean);
 
   return (
@@ -30,7 +35,7 @@ export default async function ActivityPage() {
         </p>
       </div>
 
-      <ActivityFeed initial={activity} />
+      <ActivityFeed initial={activity} featuredNames={[...featuredNames]} />
 
       <div className="mt-10 flex items-center justify-between border-t border-line pt-4">
         <div className="flex items-center gap-4">

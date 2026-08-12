@@ -889,13 +889,18 @@ application of that research than forcing interleaving into one flat list.
       32/40, detector scan clean across every changed file
 
 ### Phase 9 — Gamification Expansion *(was Phase 8)*
-- [ ] Two-currency system (points/rank, spendable shop currency)
+- [x] Two-currency system (decision 19): points/rank (leaderboard,
+      permanent) vs. spendable Credits, a `credit_transactions` ledger
 - [x] Streaks, computed off submission history (decision 18): shaped and
       crafted as its own slice, shipped ahead of the currency/shop work.
       Any passing submission extends a UTC-calendar-day streak; current +
       longest shown on Profile in the `--ember` token DESIGN.md reserved
       for this since Phase 7.5.A
-- [ ] Shop v1 (cosmetic items + Discord role integration)
+- [x] Shop v1 (decision 20): cosmetic flair/title + a repeatable
+      activity-feed feature + admin-addable real-world rewards. Discord
+      role integration is tracked separately below, not part of this slice
+- [ ] Discord role integration at point thresholds (extends the existing
+      webhook integration)
 - [ ] Post-solve peer solution visibility
 - [x] Leaderboard route (decision 15, shipped decision 17): the
       two-currency system above builds points/rank but has no page that
@@ -1341,3 +1346,88 @@ Formerly "open questions" — resolved:
     and a repeat in-browser screenshot pass confirming the `ProfileCard`
     extraction (the sixth fix, deduplicating what was by then three
     near-identical stat-card shells on the page) changed no pixels.
+20. **Shop v1 shipped** (2026-08-12), the fourth slice of Phase 9: what
+    Credits are actually for, closing the loop Credits (decision 19) opened
+    by shipping the balance with nowhere to spend it yet. Shape discovery
+    (two rounds) settled the full catalog in one slice rather than staging
+    it: cosmetics (flair + title, owned forever, equip one of each at a
+    time), a repeatable "Spotlight" activity-feed feature, and admin-added
+    real-world reward line items, matching the TODO item as written rather
+    than deferring pieces. Purchases require an explicit confirm dialog
+    (price + resulting balance) since Credits spending has no refund path;
+    equipping is free and instant, no confirm needed. New tables:
+    `shop_items` (slug/name/description/category/price, nullable
+    `flairGlyph` icon key, `repeatable`, nullable `stock` for admin-capped
+    real-world rewards), `shop_purchases` (one row per redemption, a
+    financial record: its `itemId` FK is `onDelete: "restrict"`, never
+    cascade/set null; retiring an item is `active: false`, never a delete),
+    and `equippedCosmetics` (one row per user per category, upserted on
+    equip), deliberately not columns on `user`, which is Better
+    Auth-owned and never hand-edited. No admin panel exists yet (Phase 10),
+    so the catalog is authored via `scripts/seed-shop-items.ts`
+    (`npm run db:seed-shop-items`), the same precedent `seed-quests.ts` set
+    for quests before an admin UI existed. `purchaseItem()` row-locks the
+    item (`for("update")`) inside a transaction so two concurrent buyers
+    can't both clear a capped reward's stock check before either insert
+    lands, then checks ownership (for non-repeatable items), stock, and
+    balance before writing a `shop_purchases` row and a negative
+    `credit_transactions` row together: the same ledger `credits.ts`
+    already writes to, so a purchase is just another signed row, not a
+    parallel accounting system. The "featured on Activity" effect matches
+    on `user.name` against the webhook's raw `pusher` string, the same
+    loose identity link the rest of the activity feed already relies on,
+    good enough at 14 trusted users, not a general-purpose join. Equipped
+    flair/title now render on both Profile and the leaderboard (a
+    deliberate scope expansion during shape discovery, past the brief's own
+    "Profile only" recommended default) via one batched
+    `getEquippedForUsers()` lookup rather than a per-row query. Verified
+    with the same discipline as decision 19: typecheck, lint, build, and
+    in-browser screenshots across both themes and mobile/1024px/desktop
+    widths using the same non-destructive temporary-session-override
+    pattern. The purchase/equip transactional logic itself was verified by
+    calling `purchaseItem`/`equipItem` directly against the real dev
+    database (covering the owned/already-owned, repeatable-repurchase, and
+    insufficient-credits paths) rather than through the browser, since the
+    `/api/shop/*` routes require a real Better Auth session that a
+    server-rendered-page bypass doesn't provide. Every test purchase was
+    deleted immediately after and the balance re-verified to match its
+    pre-test value exactly. One real bug caught in-browser, not by
+    typecheck or lint: the confirm dialog's "Balance after" row rendered
+    flush against its value with no gap at the dialog's `max-w-sm` width
+    (`justify-between` had no free space left to distribute), fixed with
+    an explicit `gap-3` and a shorter "New balance" label. A `/code-review`
+    pass surfaced ten findings, six fixed before shipping: `purchaseItem()`
+    only row-locked the item being bought, not the buyer, so two concurrent
+    purchases of two *different* items could both read the same pre-commit
+    balance and both pass the affordability check, closed with a
+    `pg_advisory_xact_lock` keyed on the buyer that serializes a user's
+    purchases against each other regardless of item; the leaderboard's
+    name/title truncation was broken (a flex child needs `min-w-0` for
+    `truncate` to actually engage, and `shrink-0` combined with `truncate`
+    on the title span meant it never fired), fixed with `min-w-0 flex-1`
+    on the name and `min-w-0 shrink` on the title; repurchasing "Spotlight"
+    while a boost was already active silently replaced the window with no
+    indication anything was running, fixed with an inline "already active
+    until" note; the leaderboard's equipped-cosmetics lookup ran as an
+    extra sequential round trip after its own `Promise.all` instead of
+    inside it, fixed by making `getEquippedForUsers()`'s `userIds` filter
+    optional (an unfiltered scan of a small table costs nothing extra) so
+    it can join the same `Promise.all` as the user query it used to wait
+    on; `purchaseItem()` re-derived the Credits balance with its own
+    aggregation instead of reusing `credits.ts`'s definition, fixed by
+    extracting a shared `getCreditsBalance()` that accepts either `db` or
+    an in-flight `tx`; and this decision entry itself used em dashes as
+    mid-sentence punctuation in new documentation prose, a direct violation
+    of a standing user rule, fixed by rewriting throughout. Four findings
+    were judged accepted tradeoffs or premature abstraction and left as
+    is: `user.name`-based featured-post matching having no uniqueness
+    guarantee (a pre-existing, already-disclosed limitation the rest of
+    the activity feed already lived with, now elevated from cosmetic to
+    "spent real currency" but not worth a general-purpose identity join
+    for 14 trusted users); the equippable-category check
+    (`flair`/`title`) duplicated as a hardcoded string comparison on both
+    client and server; `equipItem`/`purchaseItem` each running their own
+    small independent ownership-check query; and the `Section` component's
+    three call sites repeating identical `balance`/`ownedItemIds`/
+    `equippedByCategory` props, which TypeScript already catches at all
+    three sites simultaneously if any one of them drifts.

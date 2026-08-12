@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { questSubmissions } from "./schema";
 import { sumPassedQuestPoints } from "./points";
+import { getEquippedForUsers } from "./shop";
 
 export type LeaderboardEntry = {
   userId: string;
@@ -9,6 +10,8 @@ export type LeaderboardEntry = {
   image: string | null;
   points: number;
   rank: number;
+  title: string | null;
+  flairGlyph: string | null;
 };
 
 export type LeaderboardData = {
@@ -22,7 +25,7 @@ export type LeaderboardData = {
 // apart on what "points earned" means — only the grouping differs (one
 // user's submissions there, every user's here).
 export async function getLeaderboard(): Promise<LeaderboardData> {
-  const [allUsers, passedSubmissions] = await Promise.all([
+  const [allUsers, passedSubmissions, equipped] = await Promise.all([
     db.query.user.findMany({
       columns: { id: true, name: true, image: true, createdAt: true },
     }),
@@ -31,6 +34,9 @@ export async function getLeaderboard(): Promise<LeaderboardData> {
       columns: { userId: true, questId: true },
       with: { quest: { columns: { points: true, status: true } } },
     }),
+    // No userId filter yet available at this point — see getEquippedForUsers'
+    // own comment for why fetching unfiltered here is the right tradeoff.
+    getEquippedForUsers(),
   ]);
 
   const passedByUser = new Map<string, typeof passedSubmissions>();
@@ -57,12 +63,17 @@ export async function getLeaderboard(): Promise<LeaderboardData> {
   // ordering would be worse than the visual oddity of a skipped number.
   let rank = 0;
   let lastPoints = -1;
-  const entries: LeaderboardEntry[] = ranked.map((u, i) => {
+  const withRank = ranked.map((u, i) => {
     if (u.points !== lastPoints) {
       rank = i + 1;
       lastPoints = u.points;
     }
     return { userId: u.userId, name: u.name, image: u.image, points: u.points, rank };
+  });
+
+  const entries: LeaderboardEntry[] = withRank.map((u) => {
+    const e = equipped.get(u.userId);
+    return { ...u, title: e?.title ?? null, flairGlyph: e?.flairGlyph ?? null };
   });
 
   return { entries, totalUsers: entries.length };

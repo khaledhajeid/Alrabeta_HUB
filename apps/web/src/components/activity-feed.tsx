@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ActivityEvent } from "@/server/activity";
+import { FlairIcon } from "./shop-icons";
 
 function timeAgo(iso: string) {
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
@@ -22,10 +23,12 @@ function Row({
   event,
   isLive,
   isLast,
+  isFeatured,
 }: {
   event: ActivityEvent;
   isLive?: boolean;
   isLast?: boolean;
+  isFeatured?: boolean;
 }) {
   return (
     <div className="relative flex gap-4 pb-6 last:pb-0">
@@ -48,7 +51,14 @@ function Row({
                 service-status dots but missed here — closing the gap the
                 closing re-audit found. */}
             {isLive && <span className="sr-only">Live — </span>}
-            <span className="font-medium">{event.pusher}</span> pushed{" "}
+            <span className="font-medium">{event.pusher}</span>
+            {isFeatured && (
+              <FlairIcon
+                glyph="spark"
+                className="ml-1 inline-block h-3 w-3 shrink-0 align-middle text-accent"
+              />
+            )}
+            {isFeatured && <span className="sr-only"> (featured)</span>} pushed{" "}
             {event.commitCount} {event.commitCount === 1 ? "commit" : "commits"} to{" "}
             <span className="font-mono text-text-muted">
               {event.repo}@{event.branch}
@@ -66,9 +76,21 @@ function Row({
   );
 }
 
-export function ActivityFeed({ initial }: { initial: ActivityEvent[] }) {
+export function ActivityFeed({
+  initial,
+  featuredNames = [],
+}: {
+  initial: ActivityEvent[];
+  // Shop v1's "Spotlight" purchase: users with an unexpired featuredUntil
+  // as of this page load, matched against the raw pusher string (see
+  // getActiveFeaturedNames in server/shop.ts for why that's the only link
+  // available). Computed once at load, not updated for events that arrive
+  // live over the SSE connection during the same page view.
+  featuredNames?: string[];
+}) {
   const [events, setEvents] = useState(initial);
   const [liveIds, setLiveIds] = useState<Set<string>>(new Set());
+  const featured = new Set(featuredNames);
 
   useEffect(() => {
     const source = new EventSource("/api/activity/stream");
@@ -99,6 +121,7 @@ export function ActivityFeed({ initial }: { initial: ActivityEvent[] }) {
           event={event}
           isLive={liveIds.has(event.at)}
           isLast={i === events.length - 1}
+          isFeatured={featured.has(event.pusher)}
         />
       ))}
     </div>

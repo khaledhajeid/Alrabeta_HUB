@@ -7,12 +7,28 @@ export type CreditsData = {
   hasEarned: boolean;
 };
 
-export async function getCredits(userId: string): Promise<CreditsData> {
-  const [row] = await db
-    .select({ total: sum(creditTransactions.amount), rows: count() })
+// Accepts either `db` or an in-flight transaction (`tx`) — shop.ts's
+// purchaseItem() needs the balance check to run against the same
+// transaction its own writes are inside, not a separate read that
+// couldn't see its own not-yet-committed state. One definition of
+// "balance" for both callers to share instead of two independent
+// aggregations that could quietly drift apart.
+type QueryExecutor = Pick<typeof db, "select">;
+
+export async function getCreditsBalance(executor: QueryExecutor, userId: string): Promise<number> {
+  const [row] = await executor
+    .select({ total: sum(creditTransactions.amount) })
     .from(creditTransactions)
     .where(eq(creditTransactions.userId, userId));
-  return { balance: Number(row?.total ?? 0), hasEarned: (row?.rows ?? 0) > 0 };
+  return Number(row?.total ?? 0);
+}
+
+export async function getCredits(userId: string): Promise<CreditsData> {
+  const [balance, [row]] = await Promise.all([
+    getCreditsBalance(db, userId),
+    db.select({ rows: count() }).from(creditTransactions).where(eq(creditTransactions.userId, userId)),
+  ]);
+  return { balance, hasEarned: (row?.rows ?? 0) > 0 };
 }
 
 /**
