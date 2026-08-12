@@ -9,6 +9,7 @@ import { connection } from "@/server/queue";
 import { type GradableRunner, type GradingJobData } from "@/server/grading-queue";
 import { judgeSubmission } from "@/server/judge";
 import { awardBadgesIfEligible } from "@/server/badges";
+import { awardCreditsIfEligible } from "@/server/credits";
 
 async function processGradingJob(job: Job<GradingJobData>) {
   const submission = await db.query.questSubmissions.findFirst({
@@ -43,16 +44,29 @@ async function processGradingJob(job: Job<GradingJobData>) {
     .set({ judgeOutput: verdict, status })
     .where(eq(questSubmissions.id, submission.id));
 
-  const awarded = await awardBadgesIfEligible({
-    submissionId: submission.id,
-    questId: quest.id,
-    userId: submission.userId,
-    verdict,
-  });
+  // Independent of each other (different tables, neither feeds the
+  // other's input) — run concurrently instead of paying the sum of both
+  // operations' latency on every graded submission.
+  const [awarded, creditsEarned] = await Promise.all([
+    awardBadgesIfEligible({
+      submissionId: submission.id,
+      questId: quest.id,
+      userId: submission.userId,
+      verdict,
+    }),
+    awardCreditsIfEligible({
+      questId: quest.id,
+      userId: submission.userId,
+      status,
+      questPoints: quest.points,
+      questStatus: quest.status,
+    }),
+  ]);
 
   console.log(
     `[judge-worker] graded submission=${submission.id} quest=${quest.slug} runner=${quest.runner} verdict=${verdict.verdict} status=${status}`,
     awarded.length ? `badges=${awarded.join(",")}` : "",
+    creditsEarned !== null ? `credits=+${creditsEarned}` : "",
   );
 }
 

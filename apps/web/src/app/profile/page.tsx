@@ -6,6 +6,7 @@ import { db } from "@/server/db";
 import { badges } from "@/server/schema";
 import { BadgePill } from "@/components/badge-pill";
 import { getStreak } from "@/server/streak";
+import { getCredits } from "@/server/credits";
 
 // Same stroke-icon language as SparkIcon in badge-pill.tsx (2px stroke,
 // rounded caps) — a flame, not an emoji, keeping the "quiet and confident"
@@ -27,6 +28,41 @@ function FlameIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+// Same stroke language again — a plain token (two concentric circles), not
+// a coin-with-$-sign or a coin stack, keeping the "quiet and confident"
+// register instead of a game-shop cliche.
+function TokenIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      {...props}
+    >
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4.5" />
+    </svg>
+  );
+}
+
+// Shared by Badges/Streak/Credits below — three near-identical card shells
+// (label header + either an empty-state line or custom content) were
+// enough real duplication to be worth naming, unlike the per-card content
+// itself (icon, color, copy), which stays inline since it genuinely
+// differs card to card.
+function ProfileCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-4 rounded-lg bg-surface p-5 shadow-resting">
+      <h2 className="text-sm font-medium text-text-muted">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
 export default async function ProfilePage() {
   const session = await auth.api.getSession({ headers: await headers() });
 
@@ -44,12 +80,13 @@ export default async function ProfilePage() {
   }
 
   const { user } = session;
-  const [earnedBadges, streak] = await Promise.all([
+  const [earnedBadges, streak, credits] = await Promise.all([
     db.query.badges.findMany({
       where: eq(badges.userId, user.id),
       orderBy: (b, { desc }) => desc(b.awardedAt),
     }),
     getStreak(user.id),
+    getCredits(user.id),
   ]);
 
   return (
@@ -78,8 +115,7 @@ export default async function ProfilePage() {
           (it's why --accent is violet) but rendered nowhere in the shipped
           product until now — this is "show what already exists," not new
           gamification mechanics. */}
-      <div className="mt-4 rounded-lg bg-surface p-5 shadow-resting">
-        <h2 className="text-sm font-medium text-text-muted">Badges</h2>
+      <ProfileCard title="Badges">
         {earnedBadges.length === 0 ? (
           <p className="mt-2 text-sm text-text-muted">
             None yet — solve a memory or multithreading quest clean (valgrind or
@@ -92,14 +128,13 @@ export default async function ProfilePage() {
             ))}
           </div>
         )}
-      </div>
+      </ProfileCard>
 
       {/* Phase 9: fills the placeholder this card has held since 7.5.F.
           --ember was reserved for "streaks/warnings" from the day it was
           named (DESIGN.md) but never actually used in UI chrome until now —
           same "show what already exists" move as the badge card above. */}
-      <div className="mt-4 rounded-lg bg-surface p-5 shadow-resting">
-        <h2 className="text-sm font-medium text-text-muted">Streak</h2>
+      <ProfileCard title="Streak">
         {!streak.hasEverPassed ? (
           <p className="mt-2 text-sm text-text-muted">
             None yet — pass a quest to start your streak.
@@ -119,7 +154,29 @@ export default async function ProfilePage() {
             </div>
           </div>
         )}
-      </div>
+      </ProfileCard>
+
+      {/* Phase 9: the spendable half of the two-currency model — the
+          leaderboard/dashboard points total stays a permanent, un-spendable
+          rank signal; this balance is what'll actually pay for something
+          once Shop v1 exists. */}
+      <ProfileCard title="Credits">
+        {!credits.hasEarned ? (
+          <p className="mt-2 text-sm text-text-muted">
+            None yet — pass a quest to start earning.
+          </p>
+        ) : (
+          <div className="mt-3 flex items-center gap-3">
+            <TokenIcon className="h-8 w-8 shrink-0 text-accent" />
+            <div>
+              <div className="font-mono text-base font-semibold tabular-nums text-text">
+                {credits.balance.toLocaleString("en-US")} credits
+              </div>
+              <div className="text-xs text-text-muted">Spendable once the shop is live</div>
+            </div>
+          </div>
+        )}
+      </ProfileCard>
     </div>
   );
 }

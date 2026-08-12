@@ -1281,3 +1281,63 @@ Formerly "open questions" — resolved:
     reverted render override rather than fabricated database rows, same
     non-destructive-verification discipline as decision 17's leaderboard
     "you" row.
+
+19. **Spendable currency (Credits) shipped** (2026-08-12), the third slice
+    of Phase 9 — the schema half of the two-currency model named in the
+    original TODO item ("permanent points/rank vs. spendable shop
+    currency"). Shape discovery settled three open questions, all the
+    recommended defaults: credits earn one-time per quest passed (deduped
+    by quest id, same as points — not per submission like the streak
+    model); earn amount is 1:1 with the quest's point value; balance shown
+    on Profile now even though Shop v1 (where it gets spent) doesn't exist
+    yet, so the feature has a visible, verifiable result. A fourth
+    decision, made during craft rather than discovery: `credit_transactions`
+    is a ledger table (userId, signed amount, reason enum
+    `quest_passed`/`admin_grant`/`shop_purchase`, nullable questId, nullable
+    admin-grant note), balance computed as `sum(amount)` on read — same
+    "derive from source of truth, never cache a running total" posture as
+    points/streak already use, and it gives Shop v1's purchases and the
+    TODO's planned admin-addable manual reward line items a natural home as
+    rows in the same table with a real audit trail, rather than a single
+    mutable balance column. A `unique(userId, questId)` constraint makes
+    the earn-on-pass insert idempotent against a retried grading job
+    (Postgres treats NULLs as distinct, so admin_grant/shop_purchase rows
+    never collide with each other on that constraint). Earning is wired
+    into `judge-worker.ts` right after the existing status update, same
+    placement and `onConflictDoNothing()` idempotency shape as
+    `awardBadgesIfEligible`; a one-time `scripts/backfill-credits.ts`
+    (`npm run db:backfill-credits`) retroactively credited every
+    already-passed submission so no one's balance started at 0 while their
+    leaderboard points total didn't — run once against production,
+    verified to match each user's points total exactly (180 for the one
+    user with real passed submissions at the time). One real bug caught
+    during in-browser verification, not by typecheck or lint: `credits.
+    toLocaleString()` with no explicit locale rendered as Eastern Arabic
+    numerals (`١٨٠` instead of `180`) under the server's runtime default
+    locale — fixed by passing `"en-US"` explicitly. Verified in-browser
+    across empty and active states in both themes using the same
+    non-destructive temporary-session-override discipline as decisions 17
+    and 18. A `/code-review` pass surfaced six real fixes, applied before
+    shipping: `questId`'s FK was `onDelete: "cascade"`, contradicting the
+    "credits are permanent history" invariant — a hard-deleted quest would
+    have silently erased every credited user's balance for it, changed to
+    `set null`; the (userId, questId) unique constraint wasn't scoped by
+    `reason`, so a future admin_grant tied to a quest a user already passed
+    would've silently no-opped — closed with a CHECK constraint enforcing
+    `questId` is null unless `reason = 'quest_passed'`; `getCredits`
+    returned a bare number, unable to distinguish "never earned" from "earned
+    a real 0-point quest," fixed by mirroring streak's own
+    `hasEverPassed` pattern (`{ balance, hasEarned }`), with
+    `awardCreditsIfEligible` returning `number | null` to match; badge- and
+    credit-awarding in `judge-worker.ts` were sequential despite being fully
+    independent, parallelized with `Promise.all`; `awardCreditsIfEligible`
+    re-fetched the quest row the caller already had loaded, now takes
+    `questPoints`/`questStatus` directly; `backfill-credits.ts` rewritten
+    from a 2N-round-trip per-row loop to one joined query plus a single
+    bulk insert. Two findings (sharing an award helper with `badges.ts`;
+    extracting a shared "published" check shared with `points.ts`) were
+    judged premature abstraction and left as-is. Re-verified clean after:
+    typecheck, lint, build, a re-run of the (idempotent) backfill script,
+    and a repeat in-browser screenshot pass confirming the `ProfileCard`
+    extraction (the sixth fix, deduplicating what was by then three
+    near-identical stat-card shells on the page) changed no pixels.
