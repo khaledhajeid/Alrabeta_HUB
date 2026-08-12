@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import Image from "next/image";
 import { auth } from "@/server/auth";
 import { getLeaderboard } from "@/server/leaderboard";
+import { FlairIcon } from "@/components/shop-icons";
 
 // Phase 9: public like /activity, not gated like /profile — a leaderboard
 // is inherently about seeing everyone, and /activity already set the
@@ -70,9 +71,17 @@ export default async function LeaderboardPage() {
                 ) : (
                   <div className="h-8 w-8 shrink-0 rounded-full bg-surface-2" aria-hidden />
                 )}
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
-                  {entry.name}
-                  {isYou && <span className="ml-1.5 text-xs font-normal text-accent">(you)</span>}
+                <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium text-text">
+                  {entry.flairGlyph && (
+                    <FlairIcon glyph={entry.flairGlyph} className="h-3.5 w-3.5 shrink-0 text-accent" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate">{entry.name}</span>
+                  {entry.title && (
+                    <span className="min-w-0 shrink truncate text-xs font-normal text-text-muted">
+                      &middot; {entry.title}
+                    </span>
+                  )}
+                  {isYou && <span className="shrink-0 text-xs font-normal text-accent">(you)</span>}
                 </span>
                 <span className="shrink-0 font-mono text-xs tabular-nums text-text-muted">
                   {entry.points} pts
