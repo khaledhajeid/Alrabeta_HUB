@@ -901,7 +901,10 @@ application of that research than forcing interleaving into one flat list.
       role integration is tracked separately below, not part of this slice
 - [ ] Discord role integration at point thresholds (extends the existing
       webhook integration)
-- [ ] Post-solve peer solution visibility
+- [x] Post-solve peer solution visibility (decision 21): unlocks once the
+      viewer has personally passed a quest, one entry per peer (their
+      first pass), each a link-out card to that peer's actual commit on
+      Forgejo, this app has no in-app code viewer
 - [x] Leaderboard route (decision 15, shipped decision 17): the
       two-currency system above builds points/rank but has no page that
       surfaces rank against other people; without one, "rank" is only ever
@@ -1431,3 +1434,45 @@ Formerly "open questions" — resolved:
     three call sites repeating identical `balance`/`ownedItemIds`/
     `equippedByCategory` props, which TypeScript already catches at all
     three sites simultaneously if any one of them drifts.
+21. **Peer solution visibility shipped** (2026-08-14), the fifth slice of
+    Phase 9. Shaped via a standalone `/impeccable shape` run, one discovery
+    round: the peer list only unlocks after the viewer has personally
+    passed the quest (so it can never be browsed as a shortcut past the
+    challenge itself, not even the count or names); each entry is a
+    link-out card, avatar, name, badges earned, passed date, opening the
+    peer's actual commit on Forgejo, since this app has no in-app code
+    viewer anywhere and building one was explicitly out of scope for this
+    slice; and a peer who resubmitted and passed more than once still gets
+    exactly one entry, keyed to their first pass. No schema changes: the
+    feature reads entirely from tables that already existed
+    (`quest_submissions`, `badges`, `commits`, `user`). New file
+    `server/peer-solutions.ts`: `getPeerSolutions()` fetches every passed
+    submission for the quest except the viewer's own ordered oldest first,
+    reduces to one row per user in JS (the same "reduce in application
+    code rather than a window-function query" style this codebase already
+    uses elsewhere at this scale), then sorts newest-first and caps at 50,
+    a limit rather than real pagination, revisited only if a quest's pass
+    count ever approaches it for real. Each entry's Forgejo link is
+    resolved by joining `commits` on the `(repoId, sha)` pair, not `sha`
+    alone, matching that table's own uniqueness and staying correct even
+    though a cross-repo sha collision is practically impossible anyway.
+    The "has the viewer passed" gate reuses the quest detail page's own
+    already-fetched submissions query instead of a second round trip.
+    Section placed directly below "Your submissions" on the quest detail
+    page, reusing that section's exact row-list shape (`divide-y`,
+    `reveal-list`, `shadow-resting`) so the two read as one family. Verified
+    with the same discipline as decisions 19 and 20: typecheck, lint, and
+    build clean, plus in-browser screenshots across both themes,
+    375/1280px, using the established non-destructive temporary-session
+    pattern together with two temporary peer rows (one with an avatar and
+    a badge, one without) inserted directly into the dev database to
+    actually exercise the populated state, since there is currently only
+    one real user in this environment; both rows and their author were
+    deleted immediately after and the underlying tables reverified to hold
+    only the pre-existing real data. One real bug caught in-browser, not
+    by typecheck or lint: at 375px the badge-plus-date group was
+    `shrink-0` sharing a row with a name that needed real space, squeezing
+    a two-letter name down to one visible character before it even had a
+    chance to truncate cleanly; fixed by stacking name above badges/date
+    under the `sm` breakpoint, the same responsive shape the repo detail
+    page's own header already uses for an equivalent problem.

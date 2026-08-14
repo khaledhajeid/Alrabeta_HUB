@@ -689,8 +689,15 @@ informal tags).*
       leaderboard
 - [ ] Discord role integration at point thresholds (extends the existing
       webhook integration)
-- [ ] Post-solve peer solution visibility (once passed, see others'
-      accepted solutions for that quest)
+- [x] Post-solve peer solution visibility (decision 21): a new "Who else
+      solved this" section on the quest detail page, gated on the viewer's
+      own pass so it can never be browsed as a spoiler or a shortcut. One
+      entry per peer (their first passing submission, not every resubmit),
+      newest-first, each a link-out card (avatar, name, badges earned,
+      passed date) to that peer's real commit on Forgejo, matching the
+      repo detail page's own "Open in Forgejo" pattern since this app has
+      no in-app code viewer. No schema changes, reads entirely from
+      `quest_submissions`/`badges`/`commits`/`user`
 - [x] Leaderboard route (decision 15, shipped decision 17): the
       two-currency system above has no page that surfaces rank against
       other people; without one, "rank" is only ever visible on your own

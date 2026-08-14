@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import Image from "next/image";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { quests, questSubmissions, badges } from "@/server/schema";
+import { getPeerSolutions } from "@/server/peer-solutions";
 import { TagPill } from "@/components/tag-pill";
 import { QuestMarkdown } from "@/components/quest-markdown";
 import { QuestPrimer } from "@/components/quest-primer";
@@ -12,6 +14,20 @@ import { QuestStyleBadge } from "@/components/quest-style-badge";
 import { BadgePill } from "@/components/badge-pill";
 import { SubmissionStatus } from "@/components/submission-status";
 import { TAG_TO_BADGE_SLUG } from "@/lib/badge-info";
+
+// Pinned to UTC rather than the server's own local time: this renders in a
+// server component with no client re-render to correct it, so leaving the
+// timezone implicit would make the displayed date depend on wherever the
+// process happens to run (differs between local dev and prod) instead of
+// being a fixed, reproducible value.
+function formatPassedDate(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
 
 export default async function QuestDetailPage({
   params,
@@ -38,18 +54,25 @@ export default async function QuestDetailPage({
       })
     : [];
 
-  // One extra query, only when there's something to look up — badges are
-  // keyed by questSubmissionId, so a submission's earned badge (if any)
-  // isn't on the questSubmissions row itself.
-  const submissionBadges =
+  // Gated on the viewer's own pass, derived from the submissions query
+  // already run above rather than a second round trip — peer solutions
+  // only fetched once that gate is actually open.
+  const hasPassed = submissions.some((s) => s.status === "passed");
+
+  // Independent of each other (badges key off submissions already in hand;
+  // peers key off quest+viewer), so they run together rather than paying
+  // two sequential round trips.
+  const [submissionBadges, peerSolutions] = await Promise.all([
     submissions.length > 0
-      ? await db.query.badges.findMany({
+      ? db.query.badges.findMany({
           where: inArray(
             badges.questSubmissionId,
             submissions.map((s) => s.id),
           ),
         })
-      : [];
+      : Promise.resolve([]),
+    session && hasPassed ? getPeerSolutions(quest.id, session.user.id) : Promise.resolve([]),
+  ]);
   const badgesBySubmission = new Map<string, string[]>();
   for (const b of submissionBadges) {
     const existing = badgesBySubmission.get(b.questSubmissionId) ?? [];
@@ -144,6 +167,83 @@ export default async function QuestDetailPage({
             </div>
           )}
         </div>
+
+        {session && (
+          <div className="mt-6">
+            <h2 className="mb-3 text-sm font-medium text-text-muted">Who else solved this</h2>
+            {!hasPassed ? (
+              <div className="rounded-lg border border-dashed border-line px-5 py-8 text-center">
+                <p className="text-sm text-text-muted">
+                  Pass this quest to see how others solved it.
+                </p>
+              </div>
+            ) : peerSolutions.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-line px-5 py-8 text-center">
+                <p className="text-sm text-text-muted">
+                  You&rsquo;re the first to solve this — nobody else has, yet.
+                </p>
+              </div>
+            ) : (
+              <div className="reveal-list divide-y divide-line overflow-hidden rounded-lg bg-surface shadow-resting">
+                {peerSolutions.map((peer) => {
+                  const content = (
+                    <>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        {peer.image ? (
+                          <Image
+                            src={peer.image}
+                            alt={`${peer.name}'s avatar`}
+                            width={28}
+                            height={28}
+                            className="h-7 w-7 shrink-0 rounded-full"
+                          />
+                        ) : (
+                          <div className="h-7 w-7 shrink-0 rounded-full bg-surface-2" aria-hidden />
+                        )}
+                        <span className="truncate text-sm font-medium text-text">{peer.name}</span>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3 pl-[38px] sm:pl-0">
+                        <div className="flex items-center gap-2">
+                          {peer.badgeSlugs.map((slug) => (
+                            <BadgePill key={slug} slug={slug} />
+                          ))}
+                        </div>
+                        <span className="font-mono text-xs text-text-muted">
+                          {formatPassedDate(peer.passedAt)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                  // The badge+date group is fixed-width content (a pill plus
+                  // a date, neither of which should truncate) sharing the
+                  // row with a name that needs real space to stay readable
+                  // — at narrow widths there isn't room for both side by
+                  // side, so this stacks instead of squeezing the name
+                  // toward one letter. Same responsive shape the repo
+                  // detail page's own header already uses for the same
+                  // reason.
+                  const rowClassName =
+                    "flex flex-col items-start gap-2 px-5 py-3 transition-[background-color,transform] duration-(--motion-fast) ease-(--ease-out-quint) sm:flex-row sm:items-center sm:justify-between sm:gap-4";
+                  return peer.commitUrl ? (
+                    <a
+                      key={peer.userId}
+                      href={peer.commitUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`${rowClassName} hover:translate-x-0.5 hover:bg-surface-2`}
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    <div key={peer.userId} className={rowClassName}>
+                      {content}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
