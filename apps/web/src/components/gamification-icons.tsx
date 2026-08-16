@@ -39,3 +39,23 @@ export function TokenIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+// A plain hexagon — reads as "rank/tier" abstractly without borrowing any
+// third-party brand mark. Used on the Discord-link card, the one place
+// Phase 9 surfaces the tier-role concept.
+export function TierIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      {...props}
+    >
+      <path d="M12 2.5 20.5 7.5V16.5L12 21.5 3.5 16.5V7.5Z" />
+    </svg>
+  );
+}

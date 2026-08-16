@@ -687,8 +687,20 @@ informal tags).*
       `shop_purchases` row plus a negative `credit_transactions` row in one
       transaction; equipped flair/title show on Profile and the
       leaderboard
-- [ ] Discord role integration at point thresholds (extends the existing
-      webhook integration)
+- [x] Discord role integration at point thresholds (decision 22): extends
+      the existing webhook integration with a real bot. Self-serve Discord
+      ID linking on Profile, tiers authored via
+      `npm run db:seed-discord-tiers` ahead of the admin panel, crossing
+      into a new tier replaces the old tier role rather than accumulating.
+      Syncs on every passed submission and once immediately on linking;
+      best-effort/no-op posture matching the existing webhook, real
+      end-to-end Discord API behavior unverified until a bot is actually
+      configured. `/security-review` found linking never verifies real
+      Discord-account ownership; shipped the minimum viable mitigation
+      (unique constraint on `discordUserId`, blocks takeover of an
+      already-linked ID) per explicit user direction, the full
+      ownership-proof fix (Discord OAuth) is a known open gap, not closed
+      here. Closes out Phase 9
 - [x] Post-solve peer solution visibility (decision 21): a new "Who else
       solved this" section on the quest detail page, gated on the viewer's
       own pass so it can never be browsed as a spoiler or a shortcut. One
@@ -713,6 +725,9 @@ informal tags).*
       than fixed as a drive-by change, then fixed on request:
       `dashboard.ts`'s `pointsEarned` now sums the same way the leaderboard
       does (every passed+published quest, deduped by quest id)
+
+**Phase 9 closed** (2026-08-16), see decision 22 for the closing slice
+(Discord role integration). Phase 10 (Admin Panel) is next.
 
 ---
 

@@ -899,8 +899,10 @@ application of that research than forcing interleaving into one flat list.
 - [x] Shop v1 (decision 20): cosmetic flair/title + a repeatable
       activity-feed feature + admin-addable real-world rewards. Discord
       role integration is tracked separately below, not part of this slice
-- [ ] Discord role integration at point thresholds (extends the existing
-      webhook integration)
+- [x] Discord role integration at point thresholds (decision 22): a real
+      bot extending the existing message-only webhook, self-serve linking
+      on Profile, tiers authored via a seed script ahead of the admin
+      panel, closes out Phase 9
 - [x] Post-solve peer solution visibility (decision 21): unlocks once the
       viewer has personally passed a quest, one entry per peer (their
       first pass), each a link-out card to that peer's actual commit on
@@ -1476,3 +1478,88 @@ Formerly "open questions" — resolved:
     chance to truncate cleanly; fixed by stacking name above badges/date
     under the `sm` breakpoint, the same responsive shape the repo detail
     page's own header already uses for an equivalent problem.
+22. **Discord role integration shipped** (2026-08-16), the sixth and final
+    slice of Phase 9, closing the phase out. Shaped via a standalone
+    `/impeccable shape` run: unlike every other Phase 9 slice this one is
+    mostly infrastructure, not UI, extending the existing Discord webhook
+    (`discord.ts`, message-only) with a real bot capable of assigning
+    server roles. Discovery settled three things: linking is self-serve (a
+    plain Discord-ID text field on Profile, trust-based like the
+    pusher-name match `shop.ts` already relies on at this scale, not a full
+    OAuth handshake); tiers are authored via a new
+    `npm run db:seed-discord-tiers` script against a new
+    `discord_role_tiers` table (threshold, role ID, label), the same
+    ahead-of-the-admin-panel precedent `seed-shop-items.ts` set; and
+    crossing into a new tier replaces the old tier role rather than
+    accumulating every tier ever earned, so a member's roles always read as
+    current standing. New table `user_discord_links` (one row per user,
+    re-linking overwrites). New `server/discord-roles.ts`: `syncDiscordRole()`
+    computes total points via the same `sumPassedQuestPoints` helper
+    leaderboard.ts/dashboard.ts already share, diffs the member's current
+    Discord roles against the configured tier list, and only calls the
+    Discord API for an add/remove if something would actually change.
+    Mirrors `discord.ts`'s exact best-effort posture: silently no-ops when
+    `DISCORD_BOT_TOKEN`/`DISCORD_GUILD_ID` are unset, never throws, logs a
+    warning and skips cleanly if the linked user isn't a guild member.
+    Triggered from `judge-worker.ts` right after credits/badges are
+    awarded, on every passed submission (confirmed with the user rather
+    than assumed); also triggered once inline right after a user links
+    their Discord ID, so linking reflects current standing immediately
+    instead of waiting for the next pass. Unlinking stops future syncs but
+    doesn't strip an already-assigned role, matching the "already-earned
+    isn't clawed back" posture `credits.ts` set for Credits. `.env.example`
+    documents full bot setup (create the application, add a bot, invite it
+    with Manage Roles, and critically, drag the bot's own role above every
+    tier role in Server Settings, the single most common way this class of
+    integration silently does nothing) since the user had no bot configured
+    yet at shape time. Verified what's actually verifiable without real
+    Discord credentials: typecheck/lint/build clean; the link/unlink UI
+    live in-browser across both themes and 375/1280px (using a real
+    temporary DB row for the linked state, deleted afterward); and
+    `syncDiscordRole`'s branching logic (add+remove together, already-
+    correct no-op, member-not-found, fully-unconfigured no-op, and a
+    thrown network error) individually exercised against a stubbed `fetch`
+    in throwaway scripts, since there is no bot token/guild available in
+    this environment. The real end-to-end Discord API call is unverified
+    until the user configures a bot and tests it live.
+
+    A separately user-triggered `/code-review` pass surfaced 3 findings, all
+    triaged as real and fixed: a role add/remove call whose HTTP response
+    was never status-checked (so a 403, most likely from the bot's role
+    sitting below a tier role, would log as a false "synced" success — now
+    each write is checked individually and a partial failure is logged, not
+    swallowed); `getTotalPoints` and the Discord member fetch running
+    sequentially instead of via `Promise.all`; and `syncDiscordRole` being
+    awaited inside `judge-worker.ts`, needlessly holding a scarce
+    grading-worker concurrency slot (as low as 2 for `sandbox-exec`) for a
+    Discord round trip nothing later in the job depends on, fixed by firing
+    it without awaiting (`void syncDiscordRole(...)`, safe since the
+    function is fully try/catch-wrapped and never throws). A separately
+    user-triggered `/security-review` pass (the full 3-step sub-agent
+    process) found one real Medium-High finding at 8/10 confidence: linking
+    never verifies the caller actually owns the Discord ID they typed in
+    (no OAuth handshake against Discord), and the original `userDiscordLinks`
+    schema had no uniqueness constraint on `discordUserId`, so a second Hub
+    account could silently take over write-control of a Discord ID another
+    user had already linked, causing that victim's real server role to
+    flap according to a stranger's unrelated point total. The reviewer
+    correctly distinguished this from `shop.ts`'s `getActiveFeaturedNames`
+    trust-based name match cited as precedent in the original design brief:
+    that one is read-only and only mislabels a cosmetic UI badge, while
+    this one is a privileged write against a real external Discord account
+    via the bot's Manage Roles permission. Per explicit user direction, shipped
+    the minimum viable mitigation rather than the full fix: `discordUserId`
+    is now `unique()` in the schema, `linkDiscordAccount` catches the
+    resulting Postgres `23505` (unique_violation, unwrapped from Drizzle's
+    wrapping `DrizzleQueryError.cause`, confirmed against a real thrown
+    error rather than assumed from docs) and returns a new `already_linked`
+    result instead of a 500, and the API route/client surface it as a 409
+    with a clear message. Verified live against the dev DB with two real
+    throwaway users: a second account claiming an already-linked ID is
+    cleanly rejected, while a user re-linking their own row to a different
+    ID still works. The core missing-ownership-proof gap (anyone can still
+    claim any *unclaimed* real Discord ID) is explicitly NOT fixed by this
+    mitigation and remains open — closing it properly would need a Discord
+    OAuth `identify` handshake or a confirmation-challenge flow, deliberately
+    out of scope for this pass. Phase 9 (Gamification Expansion) is now
+    fully closed.
