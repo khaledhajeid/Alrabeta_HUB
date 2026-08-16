@@ -10,6 +10,7 @@ import { type GradableRunner, type GradingJobData } from "@/server/grading-queue
 import { judgeSubmission } from "@/server/judge";
 import { awardBadgesIfEligible } from "@/server/badges";
 import { awardCreditsIfEligible } from "@/server/credits";
+import { syncDiscordRole } from "@/server/discord-roles";
 
 async function processGradingJob(job: Job<GradingJobData>) {
   const submission = await db.query.questSubmissions.findFirst({
@@ -62,6 +63,18 @@ async function processGradingJob(job: Job<GradingJobData>) {
       questStatus: quest.status,
     }),
   ]);
+
+  // Only a pass can move a user's point total, so only a pass is worth
+  // re-checking their Discord role for. Deliberately not awaited: unlike
+  // badges/credits above, nothing later in this job depends on the result,
+  // and awaiting it would hold a scarce grading-worker concurrency slot
+  // (as low as 2 for sandbox-exec) for the duration of a Discord round
+  // trip that provides no value to the job itself. Safe to fire-and-forget
+  // because syncDiscordRole is fully wrapped in try/catch and never
+  // throws.
+  if (status === "passed") {
+    void syncDiscordRole(submission.userId);
+  }
 
   console.log(
     `[judge-worker] graded submission=${submission.id} quest=${quest.slug} runner=${quest.runner} verdict=${verdict.verdict} status=${status}`,

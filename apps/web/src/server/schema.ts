@@ -471,6 +471,39 @@ export const equippedCosmetics = pgTable(
   (table) => [unique("equipped_cosmetics_user_category_unique").on(table.userId, table.category)],
 );
 
+// Phase 9: self-serve link from a Hub account to a Discord snowflake, so
+// discord-roles.ts knows whose server role to sync. One row per user
+// (re-linking overwrites, doesn't accumulate history). Ownership of the
+// Discord ID is NOT verified (no OAuth handshake against Discord) — a Hub
+// user can type in someone else's real snowflake, which is a genuine
+// confused-deputy gap flagged by security review, accepted for now given
+// the bounded blast radius (cosmetic role churn on a friend's account in a
+// 14-person trusted circle, no access to Hub data/credits/auth) but not
+// something to build on without closing it properly (OAuth `identify`
+// scope or a confirmation challenge). `discordUserId` IS unique, though:
+// that's the one concrete mitigation shipped alongside the gap, so a
+// second Hub account can't silently steal write-control over a Discord ID
+// another user already linked.
+export const userDiscordLinks = pgTable("user_discord_links", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  discordUserId: text("discord_user_id").notNull().unique(),
+  linkedAt: timestamp("linked_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Point threshold -> Discord role, authored via scripts/seed-discord-tiers.ts
+// (no admin panel yet, same precedent as shop_items). discord-roles.ts
+// assigns only the single highest tier a member qualifies for, removing any
+// lower configured tier role it finds — "current standing," not a badge
+// collection.
+export const discordRoleTiers = pgTable("discord_role_tiers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  threshold: integer("threshold").notNull().unique(),
+  discordRoleId: text("discord_role_id").notNull(),
+  label: text("label").notNull(),
+});
+
 export const shopPurchasesRelations = relations(shopPurchases, ({ one }) => ({
   item: one(shopItems, { fields: [shopPurchases.itemId], references: [shopItems.id] }),
   user: one(user, { fields: [shopPurchases.userId], references: [user.id] }),

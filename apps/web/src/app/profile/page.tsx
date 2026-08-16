@@ -9,8 +9,10 @@ import { BadgePill } from "@/components/badge-pill";
 import { getStreak } from "@/server/streak";
 import { getCredits } from "@/server/credits";
 import { getUserShopState } from "@/server/shop";
+import { getDiscordLink } from "@/server/discord-roles";
 import { FlameIcon, TokenIcon } from "@/components/gamification-icons";
 import { FlairIcon } from "@/components/shop-icons";
+import { DiscordLinkCard } from "@/components/discord-link-card";
 
 // Shared by Badges/Streak/Credits below — three near-identical card shells
 // (label header + either an empty-state line or custom content) were
@@ -43,7 +45,7 @@ export default async function ProfilePage() {
   }
 
   const { user } = session;
-  const [earnedBadges, streak, credits, shopState] = await Promise.all([
+  const [earnedBadges, streak, credits, shopState, discordLink] = await Promise.all([
     db.query.badges.findMany({
       where: eq(badges.userId, user.id),
       orderBy: (b, { desc }) => desc(b.awardedAt),
@@ -51,6 +53,7 @@ export default async function ProfilePage() {
     getStreak(user.id),
     getCredits(user.id),
     getUserShopState(user.id),
+    getDiscordLink(user.id),
   ]);
   const equippedTitle = shopState.equippedByCategory.title ?? null;
   const equippedFlair = shopState.equippedByCategory.flair ?? null;
@@ -156,6 +159,11 @@ export default async function ProfilePage() {
           </div>
         )}
       </ProfileCard>
+
+      {/* Phase 9: the last slice — extends the existing Discord webhook
+          integration with a bot that assigns a server role from your point
+          total, syncing on every passed submission once linked. */}
+      <DiscordLinkCard linkedId={discordLink} />
     </div>
   );
 }
